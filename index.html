@@ -71,18 +71,13 @@
   #ga-root .quick-feedback.show { opacity: 1; }
   #ga-root .quick-feedback.error { color: var(--debit); }
 
-  #ga-root .amount-display {
-    text-align: center; font-size: 2.3rem; font-weight: 600; letter-spacing: -0.02em;
-    padding: 12px 0; border-bottom: 2px solid var(--rule-strong); margin-bottom: 6px;
-    transition: color 0.2s, transform 0.2s;
+  #ga-root .desc-box {
+    display: block; width: 100%; border: 1px solid var(--rule-strong); border-radius: 10px;
+    background: var(--white); font-family: inherit; font-size: 0.92rem; color: var(--ink);
+    padding: 12px 14px; outline: none; margin: 14px 0; min-height: 46px;
   }
-  #ga-root .amount-display.success { color: var(--credit); transform: scale(1.06); }
-  #ga-root .desc-input {
-    display: block; width: 100%; border: none; border-bottom: 1px solid var(--rule); background: transparent;
-    font-family: inherit; font-size: 0.9rem; color: var(--ink); padding: 8px 2px; outline: none; margin-bottom: 12px;
-  }
-  #ga-root .desc-input::placeholder { color: var(--ink-faint); }
-  #ga-root .desc-input:focus { border-bottom-color: var(--ink); }
+  #ga-root .desc-box::placeholder { color: var(--ink-faint); }
+  #ga-root .desc-box:focus { border-color: var(--ink); }
 
   #ga-root .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
   #ga-root .chip {
@@ -91,6 +86,19 @@
   }
   #ga-root .chip.active { color: var(--white); border-color: transparent; }
 
+  #ga-root .amount-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  #ga-root .amount-display {
+    flex: 1; min-width: 0; text-align: center; font-size: 2.3rem; font-weight: 600; letter-spacing: -0.02em;
+    padding: 12px 0; border-bottom: 2px solid var(--rule-strong);
+    transition: color 0.2s, transform 0.2s;
+  }
+  #ga-root .amount-display.success { color: var(--credit); transform: scale(1.06); }
+  #ga-root .confirm-arrow {
+    flex-shrink: 0; width: 52px; height: 52px; border-radius: 12px; border: none;
+    background: var(--ink); color: var(--white); font-size: 1.5rem; cursor: pointer;
+  }
+  #ga-root .confirm-arrow:active { background: var(--ink-soft); }
+
   #ga-root .keypad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; min-width: 0; }
   #ga-root .key {
     height: 54px; border-radius: 10px; background: var(--white); border: 1px solid var(--rule-strong);
@@ -98,9 +106,6 @@
   }
   #ga-root .key:active { background: var(--rule); }
   #ga-root .key-back { font-size: 1.1rem; color: var(--ink-soft); }
-  #ga-root .key-confirm { background: var(--ink); color: var(--white); border-color: var(--ink); font-size: 1.05rem; }
-  #ga-root .key-confirm:active { background: var(--ink-soft); }
-  #ga-root .key-wide { grid-column: 1 / -1; }
 
   #ga-root hr.rule { border: none; border-top: 1px solid var(--rule-strong); margin: 22px 0 6px; }
 
@@ -170,8 +175,11 @@
       <button type="button" class="pay-btn" data-pay="debito">Débito</button>
       <button type="button" class="pay-btn" data-pay="credito">Crédito</button>
     </div>
-    <input type="text" id="descInput" class="desc-input" placeholder="descrição (opcional)" autocomplete="off">
-    <div class="amount-display mono" id="amountDisplay">R$ 0,00</div>
+    <input type="text" id="descInput" class="desc-box" placeholder="descrição (opcional)" autocomplete="off">
+    <div class="amount-row">
+      <div class="amount-display mono" id="amountDisplay">R$ 0,00</div>
+      <button type="button" class="confirm-arrow" id="confirmBtn" aria-label="Adicionar">→</button>
+    </div>
     <div class="keypad" id="keypad">
       <button type="button" class="key" data-key="1">1</button>
       <button type="button" class="key" data-key="2">2</button>
@@ -185,7 +193,6 @@
       <button type="button" class="key key-back" data-key="back">⌫</button>
       <button type="button" class="key" data-key="0">0</button>
       <button type="button" class="key" data-key=",">,</button>
-      <button type="button" class="key key-confirm key-wide" data-key="confirm">✓ Adicionar</button>
     </div>
     <div class="quick-feedback" id="quickFeedback"></div>
   </div>
@@ -407,9 +414,6 @@
       const key = btn.dataset.key;
       if (key === 'back') {
         digitBuffer = digitBuffer.slice(0, -1);
-      } else if (key === 'confirm') {
-        confirmEntry();
-        return;
       } else if (key === ',') {
         if (digitBuffer === '') digitBuffer = '0,';
         else if (!digitBuffer.includes(',')) digitBuffer += ',';
@@ -425,6 +429,8 @@
       updateAmountDisplay();
     });
   });
+
+  $('confirmBtn').addEventListener('click', confirmEntry);
 
   // ---- persistência real via localStorage (funciona porque aqui fora do Claude não tem o sandbox que bloqueava) ----
   function loadExpenses() {
