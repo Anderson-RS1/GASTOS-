@@ -88,30 +88,30 @@
 
   #ga-root .amount-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
   #ga-root .amount-display {
-    flex: 1; min-width: 0; text-align: center; font-size: 2.3rem; font-weight: 600; letter-spacing: -0.02em;
+    position: relative; flex: 1; min-width: 0; text-align: center; font-size: 2.3rem; font-weight: 600; letter-spacing: -0.02em;
     padding: 12px 0; border-bottom: 2px solid var(--rule-strong);
     transition: color 0.2s, transform 0.2s;
   }
-  #ga-root .amount-display.success { color: var(--debit); transform: scale(1.06); }
-  #ga-root .trash-scene { position: relative; display: inline-flex; align-items: flex-end; }
+  #ga-root .amount-display.success { color: var(--debit); }
+  #ga-root .confirm-anim { position: absolute; inset: 0; }
   #ga-root .trash-can {
-    position: relative; z-index: 1;
+    position: absolute; right: 4px; top: 50%; font-size: 1.9rem;
     animation: trashBounce 0.95s ease-in-out both; animation-delay: 0.5s;
   }
   #ga-root .fly-money {
-    position: relative; z-index: 2; margin-left: -10px;
+    position: absolute; left: 8px; top: 50%; font-size: 1.9rem;
     animation: intoTrash 0.95s ease-in forwards;
   }
   @keyframes intoTrash {
-    0%   { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); }
-    55%  { opacity: 1; transform: translate(6px, 4px) scale(0.95) rotate(-8deg); }
-    100% { opacity: 0; transform: translate(16px, 16px) scale(0.15) rotate(-30deg); }
+    0%   { opacity: 1; transform: translateY(-50%) translateX(0) scale(1) rotate(0deg); }
+    55%  { opacity: 1; transform: translateY(-58%) translateX(calc(var(--fly-distance, 120px) * 0.85)) scale(0.9) rotate(-10deg); }
+    100% { opacity: 0; transform: translateY(-50%) translateX(var(--fly-distance, 120px)) scale(0.15) rotate(-30deg); }
   }
   @keyframes trashBounce {
-    0%, 45% { transform: scale(1) rotate(0deg); }
-    58%     { transform: scale(1.18) rotate(-5deg); }
-    75%     { transform: scale(0.94) rotate(3deg); }
-    100%    { transform: scale(1) rotate(0deg); }
+    0%, 45% { transform: translateY(-50%) scale(1) rotate(0deg); }
+    58%     { transform: translateY(-50%) scale(1.18) rotate(-5deg); }
+    75%     { transform: translateY(-50%) scale(0.94) rotate(3deg); }
+    100%    { transform: translateY(-50%) scale(1) rotate(0deg); }
   }
   #ga-root .confirm-arrow {
     flex-shrink: 0; width: 52px; height: 52px; border-radius: 12px; border: none;
@@ -415,7 +415,9 @@
     viewDate = new Date(); viewDate.setDate(1);
     render();
     const amountEl = $('amountDisplay');
-    amountEl.innerHTML = '<span class="trash-scene"><span class="trash-can">🗑️</span><span class="fly-money">💸</span></span>';
+    const flyDistance = Math.max(amountEl.clientWidth - 46, 60);
+    amountEl.style.setProperty('--fly-distance', flyDistance + 'px');
+    amountEl.innerHTML = '<span class="confirm-anim"><span class="trash-can">🗑️</span><span class="fly-money">💸</span></span>';
     amountEl.classList.add('success');
     digitBuffer = '';
     $('descInput').value = '';
