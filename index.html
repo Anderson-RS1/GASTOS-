@@ -56,23 +56,40 @@
   #ga-root .total-hero { text-align: center; font-size: 2.5rem; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 2px; }
   #ga-root .total-sub { text-align: center; color: var(--ink-faint); font-size: 0.82rem; margin-bottom: 22px; }
 
-  #ga-root .quick-add-form { display: flex; align-items: center; gap: 8px; }
-  #ga-root .quick-add-form input[type=text] {
-    flex: 1; border: none; border-bottom: 2px solid var(--rule-strong); background: transparent;
-    font-family: inherit; font-size: 1.05rem; color: var(--ink); padding: 10px 2px; outline: none;
-  }
-  #ga-root .quick-add-form input::placeholder { color: var(--ink-faint); }
-  #ga-root .quick-add-form input:focus { border-bottom-color: var(--ink); }
-  #ga-root .quick-add-form button {
-    background: var(--ink); color: var(--white); border: none; border-radius: 8px;
-    width: 42px; height: 42px; font-size: 1.15rem; cursor: pointer; flex-shrink: 0;
-  }
   #ga-root .quick-feedback {
-    font-size: 0.78rem; margin-top: 6px; min-height: 16px; color: var(--ink-soft);
+    font-size: 0.78rem; margin-top: 10px; min-height: 16px; color: var(--ink-soft); text-align: center;
     opacity: 0; transition: opacity 0.25s;
   }
   #ga-root .quick-feedback.show { opacity: 1; }
   #ga-root .quick-feedback.error { color: var(--debit); }
+
+  #ga-root .amount-display {
+    text-align: center; font-size: 2.3rem; font-weight: 600; letter-spacing: -0.02em;
+    padding: 12px 0; border-bottom: 2px solid var(--rule-strong); margin-bottom: 14px;
+  }
+  #ga-root .desc-input {
+    display: block; width: 100%; border: none; border-bottom: 1px solid var(--rule); background: transparent;
+    font-family: inherit; font-size: 0.9rem; color: var(--ink); padding: 8px 2px; outline: none; margin-bottom: 12px;
+  }
+  #ga-root .desc-input::placeholder { color: var(--ink-faint); }
+  #ga-root .desc-input:focus { border-bottom-color: var(--ink); }
+
+  #ga-root .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  #ga-root .chip {
+    font-size: 0.76rem; padding: 6px 12px; border-radius: 14px; border: 1px solid var(--rule-strong);
+    background: var(--white); color: var(--ink-soft); cursor: pointer; font-family: inherit;
+  }
+  #ga-root .chip.active { color: var(--white); border-color: transparent; }
+
+  #ga-root .keypad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; }
+  #ga-root .key {
+    height: 54px; border-radius: 10px; background: var(--white); border: 1px solid var(--rule-strong);
+    font-size: 1.3rem; color: var(--ink); cursor: pointer; font-family: 'IBM Plex Mono', monospace;
+  }
+  #ga-root .key:active { background: var(--rule); }
+  #ga-root .key-back { font-size: 1.1rem; color: var(--ink-soft); }
+  #ga-root .key-confirm { background: var(--ink); color: var(--white); border-color: var(--ink); font-size: 1.4rem; }
+  #ga-root .key-confirm:active { background: var(--ink-soft); }
 
   #ga-root hr.rule { border: none; border-top: 1px solid var(--rule-strong); margin: 22px 0 6px; }
 
@@ -137,16 +154,31 @@
   <div class="total-sub" id="totalSub">carregando…</div>
   <button id="extratoBtn" type="button" style="display:block;margin:0 auto 20px;background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">ver extrato do mês</button>
 
-  <form class="quick-add-form" id="quickAddForm">
-    <input type="text" id="quickInput" placeholder="12 cafezinho" autocomplete="off">
-    <button type="submit" aria-label="Adicionar">→</button>
-  </form>
-  <div class="payment-toggle" id="paymentToggle">
-    <button type="button" class="pay-btn active" data-pay="pix">Pix</button>
-    <button type="button" class="pay-btn" data-pay="debito">Débito</button>
-    <button type="button" class="pay-btn" data-pay="credito">Crédito</button>
+  <div class="entry-box">
+    <div class="amount-display mono" id="amountDisplay">R$ 0,00</div>
+    <input type="text" id="descInput" class="desc-input" placeholder="descrição (opcional)" autocomplete="off">
+    <div class="chip-row" id="categoryChips"></div>
+    <div class="payment-toggle" id="paymentToggle">
+      <button type="button" class="pay-btn active" data-pay="pix">Pix</button>
+      <button type="button" class="pay-btn" data-pay="debito">Débito</button>
+      <button type="button" class="pay-btn" data-pay="credito">Crédito</button>
+    </div>
+    <div class="keypad" id="keypad">
+      <button type="button" class="key" data-key="1">1</button>
+      <button type="button" class="key" data-key="2">2</button>
+      <button type="button" class="key" data-key="3">3</button>
+      <button type="button" class="key" data-key="4">4</button>
+      <button type="button" class="key" data-key="5">5</button>
+      <button type="button" class="key" data-key="6">6</button>
+      <button type="button" class="key" data-key="7">7</button>
+      <button type="button" class="key" data-key="8">8</button>
+      <button type="button" class="key" data-key="9">9</button>
+      <button type="button" class="key key-back" data-key="back">⌫</button>
+      <button type="button" class="key" data-key="0">0</button>
+      <button type="button" class="key key-confirm" data-key="confirm">✓</button>
+    </div>
+    <div class="quick-feedback" id="quickFeedback"></div>
   </div>
-  <div class="quick-feedback" id="quickFeedback"></div>
 
   <hr class="rule">
 
@@ -286,6 +318,85 @@
     });
   });
 
+  // ---- teclado numérico (sem precisar do teclado do telefone) ----
+  let digitBuffer = '';
+  let selectedCategory = 'outros';
+  let categoryManuallySet = false;
+
+  function bufferToAmount(buf) { return (parseInt(buf || '0', 10)) / 100; }
+  function updateAmountDisplay() { $('amountDisplay').textContent = formatBRL(bufferToAmount(digitBuffer)); }
+
+  function renderCategoryChips() {
+    const box = $('categoryChips');
+    box.innerHTML = '';
+    CATEGORIES.forEach(c => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const active = c.id === selectedCategory;
+      btn.className = 'chip' + (active ? ' active' : '');
+      btn.textContent = c.label;
+      if (active) btn.style.background = CAT_COLOR[c.id];
+      btn.addEventListener('click', () => {
+        selectedCategory = c.id;
+        categoryManuallySet = true;
+        renderCategoryChips();
+      });
+      box.appendChild(btn);
+    });
+  }
+  renderCategoryChips();
+  updateAmountDisplay();
+
+  $('descInput').addEventListener('input', (e) => {
+    if (categoryManuallySet) return;
+    const val = e.target.value.trim();
+    if (!val) return;
+    const guess = classify(val);
+    if (guess !== selectedCategory) { selectedCategory = guess; renderCategoryChips(); }
+  });
+
+  function confirmEntry() {
+    const amount = bufferToAmount(digitBuffer);
+    const fb = $('quickFeedback');
+    if (!amount || amount <= 0) {
+      fb.textContent = 'Digite um valor primeiro.';
+      fb.className = 'quick-feedback error show';
+      setTimeout(() => { fb.className = 'quick-feedback'; }, 2000);
+      return;
+    }
+    const description = $('descInput').value.trim();
+    const category = selectedCategory;
+    const paymentType = currentPayment;
+    const entry = { id: uid(), date: todayISO(), amount, category, paymentType, description: description || catLabel(category), createdAt: Date.now() };
+    expenses.push(entry);
+    saveExpenses();
+    viewDate = new Date(); viewDate.setDate(1);
+    render();
+    digitBuffer = '';
+    updateAmountDisplay();
+    $('descInput').value = '';
+    categoryManuallySet = false;
+    fb.textContent = `Lançado em ${catLabel(category)} · ${paymentLabel(paymentType)}.`;
+    fb.className = 'quick-feedback show';
+    setTimeout(() => { fb.className = 'quick-feedback'; }, 2200);
+  }
+
+  document.querySelectorAll('#keypad .key').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      if (key === 'back') {
+        digitBuffer = digitBuffer.slice(0, -1);
+        updateAmountDisplay();
+      } else if (key === 'confirm') {
+        confirmEntry();
+      } else {
+        if (digitBuffer.length >= 9) return;
+        digitBuffer += key;
+        updateAmountDisplay();
+      }
+    });
+  });
+
   // ---- persistência real via localStorage (funciona porque aqui fora do Claude não tem o sandbox que bloqueava) ----
   function loadExpenses() {
     try {
@@ -352,36 +463,6 @@
   }
 
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-  $('quickAddForm').addEventListener('submit', (ev) => {
-    ev.preventDefault();
-    const input = $('quickInput');
-    const raw = input.value.trim();
-    const fb = $('quickFeedback');
-    if (!raw) return;
-    const match = raw.match(/(\d+(?:[.,]\d{1,2})?)/);
-    if (!match) {
-      fb.textContent = 'Não achei o valor. Tente algo como "12 cafezinho".';
-      fb.className = 'quick-feedback error show';
-      return;
-    }
-    const amount = parseFloat(match[1].replace(',', '.'));
-    let description = (raw.slice(0, match.index) + raw.slice(match.index + match[0].length)).trim();
-    description = description.replace(/^[\s,.-]+|[\s,.-]+$/g, '');
-    const payResult = extractPayment(description);
-    description = payResult.desc;
-    const paymentType = payResult.payment || currentPayment;
-    const category = classify(description);
-    const entry = { id: uid(), date: todayISO(), amount, category, paymentType, description: description || catLabel(category), createdAt: Date.now() };
-    expenses.push(entry);
-    saveExpenses();
-    viewDate = new Date(); viewDate.setDate(1);
-    render();
-    input.value = '';
-    fb.textContent = `Lançado em ${catLabel(category)} · ${paymentLabel(paymentType)}.`;
-    fb.className = 'quick-feedback show';
-    setTimeout(() => { fb.className = 'quick-feedback'; }, 2200);
-  });
 
   $('prevMonth').addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() - 1); render(); });
   $('nextMonth').addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() + 1); render(); });
