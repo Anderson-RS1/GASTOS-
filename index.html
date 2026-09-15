@@ -92,7 +92,13 @@
     padding: 12px 0; border-bottom: 2px solid var(--rule-strong);
     transition: color 0.2s, transform 0.2s;
   }
-  #ga-root .amount-display.success { color: var(--credit); transform: scale(1.06); }
+  #ga-root .amount-display.success { color: var(--debit); transform: scale(1.06); }
+  #ga-root .fly-money { display: inline-block; animation: flyAway 0.65s ease-out forwards; }
+  @keyframes flyAway {
+    0%   { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+    30%  { opacity: 1; transform: translate(6px, -10px) rotate(-8deg) scale(1.15); }
+    100% { opacity: 0; transform: translate(60px, -80px) rotate(22deg) scale(1.4); }
+  }
   #ga-root .confirm-arrow {
     flex-shrink: 0; width: 52px; height: 52px; border-radius: 12px; border: none;
     background: var(--ink); color: var(--white); font-size: 1.5rem; cursor: pointer;
@@ -395,7 +401,7 @@
     viewDate = new Date(); viewDate.setDate(1);
     render();
     const amountEl = $('amountDisplay');
-    amountEl.textContent = '✓ Adicionado';
+    amountEl.innerHTML = '<span class="fly-money">💸</span>';
     amountEl.classList.add('success');
     digitBuffer = '';
     $('descInput').value = '';
@@ -405,7 +411,7 @@
     setTimeout(() => {
       amountEl.classList.remove('success');
       updateAmountDisplay();
-    }, 500);
+    }, 650);
     setTimeout(() => { fb.className = 'quick-feedback'; }, 2200);
   }
 
