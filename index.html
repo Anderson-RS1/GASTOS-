@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Gastos do dia a dia</title>
 <meta name="description" content="Lance seus gastos do dia a dia rapidinho e veja o extrato do mês.">
 <meta name="theme-color" content="#1E2A1F">
@@ -15,8 +15,9 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-  html, body { margin: 0; padding: 0; background: #E7EEE1; touch-action: pan-y; overflow-x: hidden; }
+  html, body { margin: 0; padding: 0; background: #E7EEE1; touch-action: pan-y; overflow-x: hidden; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   #ga-root {
+    width: 100%;
     --paper: #E7EEE1;
     --ink: #1E2A1F;
     --ink-soft: #5C6B57;
@@ -61,8 +62,7 @@
   #ga-root .month-nav button { background: none; border: none; color: var(--ink-soft); font-size: 1.1rem; cursor: pointer; padding: 6px 10px; }
   #ga-root .month-label { min-width: 130px; text-align: center; text-transform: capitalize; }
 
-  #ga-root .total-hero { text-align: center; font-size: 2.5rem; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 2px; }
-  #ga-root .total-sub { text-align: center; color: var(--ink-faint); font-size: 0.82rem; margin-bottom: 22px; }
+  #ga-root .total-hero { text-align: center; font-size: 2.5rem; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 16px; }
 
   #ga-root .quick-feedback {
     font-size: 0.78rem; margin-top: 10px; min-height: 16px; color: var(--ink-soft); text-align: center;
@@ -91,7 +91,7 @@
   }
   #ga-root .chip.active { color: var(--white); border-color: transparent; }
 
-  #ga-root .keypad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; }
+  #ga-root .keypad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; min-width: 0; }
   #ga-root .key {
     height: 54px; border-radius: 10px; background: var(--white); border: 1px solid var(--rule-strong);
     font-size: 1.3rem; color: var(--ink); cursor: pointer; font-family: 'IBM Plex Mono', monospace;
@@ -104,10 +104,10 @@
 
   #ga-root hr.rule { border: none; border-top: 1px solid var(--rule-strong); margin: 22px 0 6px; }
 
-  #ga-root .payment-toggle { display: flex; gap: 6px; margin-top: 10px; }
+  #ga-root .payment-toggle { display: flex; gap: 6px; margin-top: 10px; min-width: 0; }
   #ga-root .pay-btn {
-    flex: 1; background: var(--white); border: 1px solid var(--rule-strong); color: var(--ink-soft);
-    border-radius: 8px; padding: 6px 0; font-size: 0.78rem; cursor: pointer; font-family: inherit;
+    flex: 1; min-width: 0; background: var(--white); border: 1px solid var(--rule-strong); color: var(--ink-soft);
+    border-radius: 8px; padding: 6px 2px; font-size: 0.76rem; cursor: pointer; font-family: inherit;
   }
   #ga-root .pay-btn.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
 
@@ -162,16 +162,15 @@
     <button id="nextMonth" aria-label="Próximo mês">›</button>
   </div>
   <div class="total-hero mono" id="totalHero">R$ 0,00</div>
-  <div class="total-sub" id="totalSub">carregando…</div>
 
   <div class="entry-box">
-    <input type="text" id="descInput" class="desc-input" placeholder="descrição (opcional)" autocomplete="off">
     <div class="chip-row" id="categoryChips"></div>
     <div class="payment-toggle" id="paymentToggle">
       <button type="button" class="pay-btn active" data-pay="pix">Pix</button>
       <button type="button" class="pay-btn" data-pay="debito">Débito</button>
       <button type="button" class="pay-btn" data-pay="credito">Crédito</button>
     </div>
+    <input type="text" id="descInput" class="desc-input" placeholder="descrição (opcional)" autocomplete="off">
     <div class="amount-display mono" id="amountDisplay">R$ 0,00</div>
     <div class="keypad" id="keypad">
       <button type="button" class="key" data-key="1">1</button>
@@ -399,7 +398,7 @@
     setTimeout(() => {
       amountEl.classList.remove('success');
       updateAmountDisplay();
-    }, 900);
+    }, 500);
     setTimeout(() => { fb.className = 'quick-feedback'; }, 2200);
   }
 
@@ -461,7 +460,6 @@
     const monthEntries = entriesForViewMonth();
     const total = monthEntries.reduce((s, e) => s + e.amount, 0);
     $('totalHero').textContent = formatBRL(total);
-    $('totalSub').textContent = monthEntries.length === 0 ? 'nenhum gasto lançado neste mês' : monthEntries.length + (monthEntries.length === 1 ? ' gasto lançado' : ' gastos lançados');
     renderLedger(monthEntries);
   }
 
