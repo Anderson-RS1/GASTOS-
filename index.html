@@ -26,12 +26,15 @@
     --debit: #9B3A2E;
     --white: #FDFCF9;
 
-    --c-alimentacao: #9B3A2E;
-    --c-transporte: #8A5A2E;
-    --c-moradia: #3E5B7A;
-    --c-saude: #4E7A5B;
-    --c-lazer: #7A4E72;
-    --c-educacao: #3E7A78;
+    --c-cachaca: #8A5A2E;
+    --c-hydro: #4A3220;
+    --c-mercado: #4E7A5B;
+    --c-delivery: #9B3A2E;
+    --c-apostas: #7A4E72;
+    --c-lavanderia: #3E5B7A;
+    --c-gata: #B5657A;
+    --c-coleta: #3E7A78;
+    --c-saude: #7A7A3E;
     --c-outros: #756D60;
 
     font-family: 'IBM Plex Sans', -apple-system, sans-serif;
@@ -65,7 +68,7 @@
 
   #ga-root .amount-display {
     text-align: center; font-size: 2.3rem; font-weight: 600; letter-spacing: -0.02em;
-    padding: 12px 0; border-bottom: 2px solid var(--rule-strong); margin-bottom: 14px;
+    padding: 12px 0; border-bottom: 2px solid var(--rule-strong); margin-bottom: 6px;
   }
   #ga-root .desc-input {
     display: block; width: 100%; border: none; border-bottom: 1px solid var(--rule); background: transparent;
@@ -88,8 +91,9 @@
   }
   #ga-root .key:active { background: var(--rule); }
   #ga-root .key-back { font-size: 1.1rem; color: var(--ink-soft); }
-  #ga-root .key-confirm { background: var(--ink); color: var(--white); border-color: var(--ink); font-size: 1.4rem; }
+  #ga-root .key-confirm { background: var(--ink); color: var(--white); border-color: var(--ink); font-size: 1.05rem; }
   #ga-root .key-confirm:active { background: var(--ink-soft); }
+  #ga-root .key-wide { grid-column: 1 / -1; }
 
   #ga-root hr.rule { border: none; border-top: 1px solid var(--rule-strong); margin: 22px 0 6px; }
 
@@ -155,7 +159,6 @@
   <button id="extratoBtn" type="button" style="display:block;margin:0 auto 20px;background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">ver extrato do mês</button>
 
   <div class="entry-box">
-    <div class="amount-display mono" id="amountDisplay">R$ 0,00</div>
     <input type="text" id="descInput" class="desc-input" placeholder="descrição (opcional)" autocomplete="off">
     <div class="chip-row" id="categoryChips"></div>
     <div class="payment-toggle" id="paymentToggle">
@@ -163,6 +166,7 @@
       <button type="button" class="pay-btn" data-pay="debito">Débito</button>
       <button type="button" class="pay-btn" data-pay="credito">Crédito</button>
     </div>
+    <div class="amount-display mono" id="amountDisplay">R$ 0,00</div>
     <div class="keypad" id="keypad">
       <button type="button" class="key" data-key="1">1</button>
       <button type="button" class="key" data-key="2">2</button>
@@ -173,9 +177,10 @@
       <button type="button" class="key" data-key="7">7</button>
       <button type="button" class="key" data-key="8">8</button>
       <button type="button" class="key" data-key="9">9</button>
-      <button type="button" class="key key-back" data-key="back">⌫</button>
+      <button type="button" class="key" data-key=",">,</button>
       <button type="button" class="key" data-key="0">0</button>
-      <button type="button" class="key key-confirm" data-key="confirm">✓</button>
+      <button type="button" class="key key-back" data-key="back">⌫</button>
+      <button type="button" class="key key-confirm key-wide" data-key="confirm">✓ Adicionar</button>
     </div>
     <div class="quick-feedback" id="quickFeedback"></div>
   </div>
@@ -256,15 +261,18 @@
 <script>
 (function () {
   const CATEGORIES = [
-    { id: 'alimentacao', label: 'Alimentação', keywords: ['mercado','supermercado','feira','restaurante','lanche','ifood','padaria','acougue','hortifruti','comida','almoco','jantar','cafe'] },
-    { id: 'transporte', label: 'Transporte', keywords: ['uber','99','gasolina','combustivel','onibus','passagem','estacionamento','pedagio','carro','moto','taxi'] },
-    { id: 'moradia', label: 'Moradia/Contas', keywords: ['luz','agua','internet','aluguel','condominio','gas','telefone','celular','energia'] },
-    { id: 'saude', label: 'Saúde', keywords: ['farmacia','remedio','medico','consulta','academia','dentista','plano'] },
-    { id: 'lazer', label: 'Lazer', keywords: ['cinema','bar','show','streaming','netflix','festa','balada','presente'] },
-    { id: 'educacao', label: 'Educação', keywords: ['curso','livro','faculdade','mensalidade','escola','material'] },
+    { id: 'cachaca', label: 'Cachaça & Cia', keywords: ['cachaca','cerveja','bebida','birita','chopp','vodka','whisky','drink','boteco','tira gosto','tiragosto','churrasco','churrasquinho','petisco','bar'] },
+    { id: 'hydro', label: 'Café Hydro', keywords: ['hydro','cafe hydro','cafe'] },
+    { id: 'mercado', label: 'Mercado', keywords: ['mercado','supermercado','feira','hortifruti','acougue','padaria','hortifruti'] },
+    { id: 'delivery', label: 'Delivery/Restaurante', keywords: ['restaurante','lanchonete','ifood','delivery','lanche','hamburgueria','pizza','pizzaria','rappi'] },
+    { id: 'apostas', label: 'Bets', keywords: ['aposta','bet','loteria','jogo do bicho','rifa'] },
+    { id: 'lavanderia', label: 'Lavanderia', keywords: ['lavanderia','lavagem de roupa','tinturaria'] },
+    { id: 'gata', label: 'Gata Vaidosa', keywords: ['depilacao','cabelo','salao','unha','manicure','pedicure','estetica','sobrancelha','maquiagem'] },
+    { id: 'coleta', label: 'Coleta do Trabalho', keywords: ['coleta'] },
+    { id: 'saude', label: 'Saúde', keywords: ['farmacia','remedio','medico','consulta','dentista','plano de saude','academia'] },
     { id: 'outros', label: 'Outros', keywords: [] }
   ];
-  const CAT_COLOR = { alimentacao: 'var(--c-alimentacao)', transporte: 'var(--c-transporte)', moradia: 'var(--c-moradia)', saude: 'var(--c-saude)', lazer: 'var(--c-lazer)', educacao: 'var(--c-educacao)', outros: 'var(--c-outros)' };
+  const CAT_COLOR = { cachaca: 'var(--c-cachaca)', hydro: 'var(--c-hydro)', mercado: 'var(--c-mercado)', delivery: 'var(--c-delivery)', apostas: 'var(--c-apostas)', lavanderia: 'var(--c-lavanderia)', gata: 'var(--c-gata)', coleta: 'var(--c-coleta)', saude: 'var(--c-saude)', outros: 'var(--c-outros)' };
   const PAYMENT_TYPES = [
     { id: 'pix', label: 'Pix' },
     { id: 'debito', label: 'Débito' },
@@ -323,8 +331,8 @@
   let selectedCategory = 'outros';
   let categoryManuallySet = false;
 
-  function bufferToAmount(buf) { return (parseInt(buf || '0', 10)) / 100; }
-  function updateAmountDisplay() { $('amountDisplay').textContent = formatBRL(bufferToAmount(digitBuffer)); }
+  function bufferToAmount() { return parseFloat((digitBuffer || '0').replace(',', '.')) || 0; }
+  function updateAmountDisplay() { $('amountDisplay').textContent = digitBuffer ? ('R$ ' + digitBuffer) : 'R$ 0,00'; }
 
   function renderCategoryChips() {
     const box = $('categoryChips');
@@ -356,7 +364,7 @@
   });
 
   function confirmEntry() {
-    const amount = bufferToAmount(digitBuffer);
+    const amount = bufferToAmount();
     const fb = $('quickFeedback');
     if (!amount || amount <= 0) {
       fb.textContent = 'Digite um valor primeiro.';
@@ -386,14 +394,22 @@
       const key = btn.dataset.key;
       if (key === 'back') {
         digitBuffer = digitBuffer.slice(0, -1);
-        updateAmountDisplay();
       } else if (key === 'confirm') {
         confirmEntry();
+        return;
+      } else if (key === ',') {
+        if (digitBuffer === '') digitBuffer = '0,';
+        else if (!digitBuffer.includes(',')) digitBuffer += ',';
       } else {
-        if (digitBuffer.length >= 9) return;
+        if (digitBuffer.includes(',')) {
+          const decimals = digitBuffer.split(',')[1] || '';
+          if (decimals.length >= 2) return;
+        } else if (digitBuffer.replace(',', '').length >= 7) {
+          return;
+        }
         digitBuffer += key;
-        updateAmountDisplay();
       }
+      updateAmountDisplay();
     });
   });
 
