@@ -49,6 +49,10 @@
   #ga-root * { box-sizing: border-box; }
   #ga-root .mono { font-family: 'IBM Plex Mono', monospace; }
 
+  #ga-root button {
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
   #ga-root .month-nav {
     display: flex; align-items: center; justify-content: center; gap: 14px;
     color: var(--ink-soft); font-size: 0.85rem; margin-bottom: 4px;
@@ -156,7 +160,6 @@
   </div>
   <div class="total-hero mono" id="totalHero">R$ 0,00</div>
   <div class="total-sub" id="totalSub">carregando…</div>
-  <button id="extratoBtn" type="button" style="display:block;margin:0 auto 20px;background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">ver extrato do mês</button>
 
   <div class="entry-box">
     <input type="text" id="descInput" class="desc-input" placeholder="descrição (opcional)" autocomplete="off">
@@ -177,13 +180,15 @@
       <button type="button" class="key" data-key="7">7</button>
       <button type="button" class="key" data-key="8">8</button>
       <button type="button" class="key" data-key="9">9</button>
-      <button type="button" class="key" data-key=",">,</button>
-      <button type="button" class="key" data-key="0">0</button>
       <button type="button" class="key key-back" data-key="back">⌫</button>
+      <button type="button" class="key" data-key="0">0</button>
+      <button type="button" class="key" data-key=",">,</button>
       <button type="button" class="key key-confirm key-wide" data-key="confirm">✓ Adicionar</button>
     </div>
     <div class="quick-feedback" id="quickFeedback"></div>
   </div>
+
+  <button id="extratoBtn" type="button" style="display:block;margin:14px auto 0;background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">ver extrato do mês</button>
 
   <hr class="rule">
 
@@ -264,11 +269,11 @@
     { id: 'cachaca', label: 'Cachaça & Cia', keywords: ['cachaca','cerveja','bebida','birita','chopp','vodka','whisky','drink','boteco','tira gosto','tiragosto','churrasco','churrasquinho','petisco','bar'] },
     { id: 'hydro', label: 'Café Hydro', keywords: ['hydro','cafe hydro','cafe'] },
     { id: 'mercado', label: 'Mercado', keywords: ['mercado','supermercado','feira','hortifruti','acougue','padaria','hortifruti'] },
-    { id: 'delivery', label: 'Delivery/Restaurante', keywords: ['restaurante','lanchonete','ifood','delivery','lanche','hamburgueria','pizza','pizzaria','rappi'] },
+    { id: 'delivery', label: 'Comida Fora', keywords: ['restaurante','lanchonete','ifood','delivery','lanche','hamburgueria','pizza','pizzaria','rappi'] },
     { id: 'apostas', label: 'Bets', keywords: ['aposta','bet','loteria','jogo do bicho','rifa'] },
     { id: 'lavanderia', label: 'Lavanderia', keywords: ['lavanderia','lavagem de roupa','tinturaria'] },
     { id: 'gata', label: 'Gata Vaidosa', keywords: ['depilacao','cabelo','salao','unha','manicure','pedicure','estetica','sobrancelha','maquiagem'] },
-    { id: 'coleta', label: 'Coleta do Trabalho', keywords: ['coleta'] },
+    { id: 'coleta', label: 'Coletas', keywords: ['coleta'] },
     { id: 'saude', label: 'Saúde', keywords: ['farmacia','remedio','medico','consulta','dentista','plano de saude','academia'] },
     { id: 'outros', label: 'Outros', keywords: [] }
   ];
