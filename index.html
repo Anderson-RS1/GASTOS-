@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gastos do dia a dia</title>
+<meta name="description" content="Lance seus gastos do dia a dia rapidinho e veja o extrato do mês.">
+<meta name="theme-color" content="#1E2A1F">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gastos">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  html, body { margin: 0; padding: 0; background: #E7EEE1; }
+  #ga-root {
+    --paper: #E7EEE1;
+    --ink: #1E2A1F;
+    --ink-soft: #5C6B57;
+    --ink-faint: #8A9784;
+    --rule: #C4D4BB;
+    --rule-strong: #9CB491;
+    --debit: #9B3A2E;
+    --white: #FDFCF9;
+
+    --c-alimentacao: #9B3A2E;
+    --c-transporte: #8A5A2E;
+    --c-moradia: #3E5B7A;
+    --c-saude: #4E7A5B;
+    --c-lazer: #7A4E72;
+    --c-educacao: #3E7A78;
+    --c-outros: #756D60;
+
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: max(24px, env(safe-area-inset-top)) 16px calc(36px + env(safe-area-inset-bottom));
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  #ga-root * { box-sizing: border-box; }
+  #ga-root .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  #ga-root .month-nav {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    color: var(--ink-soft); font-size: 0.85rem; margin-bottom: 4px;
+  }
+  #ga-root .month-nav button { background: none; border: none; color: var(--ink-soft); font-size: 1.1rem; cursor: pointer; padding: 6px 10px; }
+  #ga-root .month-label { min-width: 130px; text-align: center; text-transform: capitalize; }
+
+  #ga-root .total-hero { text-align: center; font-size: 2.5rem; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 2px; }
+  #ga-root .total-sub { text-align: center; color: var(--ink-faint); font-size: 0.82rem; margin-bottom: 22px; }
+
+  #ga-root .quick-add-form { display: flex; align-items: center; gap: 8px; }
+  #ga-root .quick-add-form input[type=text] {
+    flex: 1; border: none; border-bottom: 2px solid var(--rule-strong); background: transparent;
+    font-family: inherit; font-size: 1.05rem; color: var(--ink); padding: 10px 2px; outline: none;
+  }
+  #ga-root .quick-add-form input::placeholder { color: var(--ink-faint); }
+  #ga-root .quick-add-form input:focus { border-bottom-color: var(--ink); }
+  #ga-root .quick-add-form button {
+    background: var(--ink); color: var(--white); border: none; border-radius: 8px;
+    width: 42px; height: 42px; font-size: 1.15rem; cursor: pointer; flex-shrink: 0;
+  }
+  #ga-root .quick-feedback {
+    font-size: 0.78rem; margin-top: 6px; min-height: 16px; color: var(--ink-soft);
+    opacity: 0; transition: opacity 0.25s;
+  }
+  #ga-root .quick-feedback.show { opacity: 1; }
+  #ga-root .quick-feedback.error { color: var(--debit); }
+
+  #ga-root hr.rule { border: none; border-top: 1px solid var(--rule-strong); margin: 22px 0 6px; }
+
+  #ga-root .date-group-label { font-size: 0.75rem; color: var(--ink-faint); margin: 16px 0 4px; text-transform: capitalize; }
+  #ga-root .entry-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 2px; border-bottom: 1px solid var(--rule); cursor: pointer;
+  }
+  #ga-root .entry-row:active { background: rgba(0,0,0,0.02); }
+  #ga-root .entry-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  #ga-root .cat-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  #ga-root .entry-desc { font-size: 0.92rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #ga-root .entry-cat { font-size: 0.72rem; color: var(--ink-faint); }
+  #ga-root .entry-amt { color: var(--debit); font-size: 0.92rem; flex-shrink: 0; }
+
+  #ga-root .empty-state { text-align: center; color: var(--ink-faint); font-size: 0.85rem; padding: 30px 10px; }
+  #ga-root .loading-state { text-align: center; color: var(--ink-faint); font-size: 0.85rem; padding: 40px 0; }
+
+  #ga-root .footer-link {
+    display: block; text-align: center; margin-top: 26px; font-size: 0.75rem;
+    color: var(--ink-faint); background: none; border: none; cursor: pointer; text-decoration: underline;
+    text-underline-offset: 2px; width: 100%;
+  }
+
+  #ga-root .overlay { display: none; position: fixed; inset: 0; background: rgba(30,42,31,0.45); align-items: flex-end; justify-content: center; z-index: 50; }
+  #ga-root .overlay.open { display: flex; }
+  #ga-root .modal-sheet { background: var(--white); width: 100%; max-width: 460px; border-radius: 16px 16px 0 0; padding: 20px 18px calc(28px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 24px rgba(0,0,0,0.15); }
+  #ga-root .modal-sheet h3 { margin: 0 0 14px; font-size: 1rem; font-weight: 600; }
+  #ga-root .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  #ga-root .field-row { display: flex; gap: 10px; }
+  #ga-root .field label { font-size: 0.72rem; color: var(--ink-soft); }
+  #ga-root .field input, #ga-root .field select {
+    font-family: inherit; font-size: 0.9rem; color: var(--ink);
+    border: 1px solid var(--rule-strong); border-radius: 6px; padding: 7px 8px; background: var(--white);
+  }
+  #ga-root .modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+  #ga-root .modal-actions .delete-btn { background: none; border: none; color: var(--debit); font-size: 0.85rem; cursor: pointer; }
+  #ga-root .modal-actions .right-actions { display: flex; gap: 8px; }
+  #ga-root .modal-actions button.cancel { background: none; border: 1px solid var(--rule-strong); color: var(--ink-soft); border-radius: 6px; padding: 8px 14px; font-size: 0.85rem; cursor: pointer; }
+  #ga-root .modal-actions button.save { background: var(--ink); color: var(--white); border: none; border-radius: 6px; padding: 8px 14px; font-size: 0.85rem; cursor: pointer; }
+  #ga-root .confirm-text { font-size: 0.88rem; color: var(--ink-soft); margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div id="ga-root">
+  <div class="month-nav">
+    <button id="prevMonth" aria-label="Mês anterior">‹</button>
+    <span class="month-label" id="monthLabel">—</span>
+    <button id="nextMonth" aria-label="Próximo mês">›</button>
+  </div>
+  <div class="total-hero mono" id="totalHero">R$ 0,00</div>
+  <div class="total-sub" id="totalSub">carregando…</div>
+  <button id="extratoBtn" type="button" style="display:block;margin:0 auto 20px;background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">ver extrato do mês</button>
+
+  <form class="quick-add-form" id="quickAddForm">
+    <input type="text" id="quickInput" placeholder="12 cafezinho" autocomplete="off">
+    <button type="submit" aria-label="Adicionar">→</button>
+  </form>
+  <div class="quick-feedback" id="quickFeedback"></div>
+
+  <hr class="rule">
+
+  <div class="ledger" id="ledger"><div class="loading-state">Carregando…</div></div>
+
+  <hr class="rule">
+
+  <button class="toggle-details" id="toggleBackup" type="button" style="background:none;border:none;color:var(--ink-faint);font-size:0.78rem;padding:6px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">+ exportar / importar backup</button>
+  <div id="backupPanel" style="display:none;margin-top:10px;">
+    <div class="field"><label>Seus dados (pra guardar à parte ou levar pra outro aparelho)</label>
+      <textarea id="backupText" readonly rows="3" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;border:1px solid var(--rule-strong);border-radius:6px;padding:8px;background:var(--white);color:var(--ink-soft);width:100%;resize:vertical;"></textarea>
+      <button id="copyBackupBtn" type="button" style="margin-top:6px;background:var(--ink);color:var(--white);border:none;border-radius:6px;padding:7px 12px;font-size:0.78rem;cursor:pointer;align-self:flex-start;">Copiar</button>
+      <span id="copyFeedback" style="font-size:0.72rem;color:var(--ink-soft);margin-left:8px;"></span>
+    </div>
+    <div class="field"><label>Colar backup pra restaurar</label>
+      <textarea id="restoreText" rows="3" placeholder="cole aqui o texto salvo" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;border:1px solid var(--rule-strong);border-radius:6px;padding:8px;background:var(--white);color:var(--ink);width:100%;resize:vertical;"></textarea>
+      <button id="restoreBtn" type="button" style="margin-top:6px;background:var(--ink);color:var(--white);border:none;border-radius:6px;padding:7px 12px;font-size:0.78rem;cursor:pointer;align-self:flex-start;">Carregar backup</button>
+      <span id="restoreFeedback" style="font-size:0.72rem;color:var(--ink-soft);margin-left:8px;"></span>
+    </div>
+  </div>
+
+  <button class="footer-link" id="clearAllBtn" type="button">Limpar todos os dados</button>
+</div>
+
+<div class="overlay" id="editOverlay">
+  <div class="modal-sheet">
+    <h3>Editar gasto</h3>
+    <div class="field-row">
+      <div class="field" style="flex:1"><label for="eValor">Valor (R$)</label><input type="number" id="eValor" step="0.01" min="0" inputmode="decimal"></div>
+      <div class="field" style="flex:1"><label for="eData">Data</label><input type="date" id="eData"></div>
+    </div>
+    <div class="field"><label for="eDescricao">Descrição</label><input type="text" id="eDescricao"></div>
+    <div class="field"><label for="eCategoria">Categoria</label><select id="eCategoria"></select></div>
+    <div class="modal-actions">
+      <button class="delete-btn" id="eDeleteBtn" type="button">Excluir</button>
+      <div class="right-actions">
+        <button class="cancel" id="eCancelBtn" type="button">Cancelar</button>
+        <button class="save" id="eSaveBtn" type="button">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="clearOverlay">
+  <div class="modal-sheet">
+    <h3>Limpar todos os dados</h3>
+    <p class="confirm-text">Isso apaga permanentemente todos os gastos salvos neste aparelho. Não dá pra desfazer.</p>
+    <div class="modal-actions">
+      <span></span>
+      <div class="right-actions">
+        <button class="cancel" id="cCancelBtn" type="button">Cancelar</button>
+        <button class="save" id="cConfirmBtn" type="button" style="background: var(--debit);">Apagar tudo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="extratoOverlay">
+  <div class="modal-sheet">
+    <h3 id="extratoTitle">Extrato do mês</h3>
+    <textarea id="extratoText" readonly rows="12" style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;line-height:1.5;border:1px solid var(--rule-strong);border-radius:6px;padding:10px;background:var(--white);color:var(--ink);width:100%;resize:vertical;white-space:pre;"></textarea>
+    <div class="modal-actions">
+      <span id="extratoCopyFeedback" style="font-size:0.75rem;color:var(--ink-soft);"></span>
+      <div class="right-actions">
+        <button class="cancel" id="extratoCloseBtn" type="button">Fechar</button>
+        <button class="save" id="extratoCopyBtn" type="button">Copiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const CATEGORIES = [
+    { id: 'alimentacao', label: 'Alimentação', keywords: ['mercado','supermercado','feira','restaurante','lanche','ifood','padaria','acougue','hortifruti','comida','almoco','jantar','cafe'] },
+    { id: 'transporte', label: 'Transporte', keywords: ['uber','99','gasolina','combustivel','onibus','passagem','estacionamento','pedagio','carro','moto','taxi'] },
+    { id: 'moradia', label: 'Moradia/Contas', keywords: ['luz','agua','internet','aluguel','condominio','gas','telefone','celular','energia'] },
+    { id: 'saude', label: 'Saúde', keywords: ['farmacia','remedio','medico','consulta','academia','dentista','plano'] },
+    { id: 'lazer', label: 'Lazer', keywords: ['cinema','bar','show','streaming','netflix','festa','balada','presente'] },
+    { id: 'educacao', label: 'Educação', keywords: ['curso','livro','faculdade','mensalidade','escola','material'] },
+    { id: 'outros', label: 'Outros', keywords: [] }
+  ];
+  const CAT_COLOR = { alimentacao: 'var(--c-alimentacao)', transporte: 'var(--c-transporte)', moradia: 'var(--c-moradia)', saude: 'var(--c-saude)', lazer: 'var(--c-lazer)', educacao: 'var(--c-educacao)', outros: 'var(--c-outros)' };
+  const STORAGE_KEY = 'gastos_diarios_v1';
+
+  let expenses = [];
+  let viewDate = new Date(); viewDate.setDate(1);
+
+  const $ = (id) => document.getElementById(id);
+
+  function normalize(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+  function classify(desc) {
+    const n = normalize(desc);
+    for (const cat of CATEGORIES) { if (cat.id === 'outros') continue; if (cat.keywords.some(k => n.includes(k))) return cat.id; }
+    return 'outros';
+  }
+  function catLabel(id) { const c = CATEGORIES.find(c => c.id === id); return c ? c.label : 'Outros'; }
+  function formatBRL(n) { return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function parseISODate(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
+  function todayISO() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function uid() { return (crypto.randomUUID ? crypto.randomUUID() : 'e' + Date.now() + Math.random().toString(16).slice(2)); }
+  function monthKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+
+  function populateCategorySelect(sel) {
+    sel.innerHTML = '';
+    CATEGORIES.forEach(c => { const opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.label; sel.appendChild(opt); });
+  }
+  populateCategorySelect($('eCategoria'));
+
+  // ---- persistência real via localStorage (funciona porque aqui fora do Claude não tem o sandbox que bloqueava) ----
+  function loadExpenses() {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      expenses = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      console.error('Erro ao carregar dados salvos:', e);
+      expenses = [];
+    }
+    render();
+  }
+  function saveExpenses() {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+    } catch (e) {
+      console.error('Erro ao salvar:', e);
+    }
+    updateBackupText();
+  }
+  function updateBackupText() {
+    const el = $('backupText');
+    if (el) el.value = JSON.stringify(expenses);
+  }
+
+  function entriesForViewMonth() {
+    const key = monthKey(viewDate);
+    return expenses.filter(e => e.date.slice(0, 7) === key).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+  }
+
+  function render() {
+    $('monthLabel').textContent = viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const monthEntries = entriesForViewMonth();
+    const total = monthEntries.reduce((s, e) => s + e.amount, 0);
+    $('totalHero').textContent = formatBRL(total);
+    $('totalSub').textContent = monthEntries.length === 0 ? 'nenhum gasto lançado neste mês' : monthEntries.length + (monthEntries.length === 1 ? ' gasto lançado' : ' gastos lançados');
+    renderLedger(monthEntries);
+  }
+
+  function renderLedger(monthEntries) {
+    const ledger = $('ledger');
+    ledger.innerHTML = '';
+    if (monthEntries.length === 0) {
+      ledger.innerHTML = '<div class="empty-state">Nada lançado neste mês ainda.<br>Digite acima pra começar — tipo "12 cafezinho".</div>';
+      return;
+    }
+    let lastDate = null;
+    monthEntries.forEach(e => {
+      if (e.date !== lastDate) {
+        lastDate = e.date;
+        const label = document.createElement('div');
+        label.className = 'date-group-label';
+        label.textContent = parseISODate(e.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', weekday: 'short' });
+        ledger.appendChild(label);
+      }
+      const row = document.createElement('div');
+      row.className = 'entry-row';
+      row.innerHTML = `
+        <div class="entry-left">
+          <span class="cat-dot" style="background:${CAT_COLOR[e.category]}"></span>
+          <div>
+            <div class="entry-desc">${escapeHtml(e.description || catLabel(e.category))}</div>
+            <div class="entry-cat">${catLabel(e.category)}</div>
+          </div>
+        </div>
+        <div class="entry-amt mono">${formatBRL(e.amount)}</div>
+      `;
+      row.addEventListener('click', () => openEditModal(e.id));
+      ledger.appendChild(row);
+    });
+  }
+
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  $('quickAddForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const input = $('quickInput');
+    const raw = input.value.trim();
+    const fb = $('quickFeedback');
+    if (!raw) return;
+    const match = raw.match(/(\d+(?:[.,]\d{1,2})?)/);
+    if (!match) {
+      fb.textContent = 'Não achei o valor. Tente algo como "12 cafezinho".';
+      fb.className = 'quick-feedback error show';
+      return;
+    }
+    const amount = parseFloat(match[1].replace(',', '.'));
+    let description = (raw.slice(0, match.index) + raw.slice(match.index + match[0].length)).trim();
+    description = description.replace(/^[\s,.-]+|[\s,.-]+$/g, '');
+    const category = classify(description);
+    const entry = { id: uid(), date: todayISO(), amount, category, description: description || catLabel(category), createdAt: Date.now() };
+    expenses.push(entry);
+    saveExpenses();
+    viewDate = new Date(); viewDate.setDate(1);
+    render();
+    input.value = '';
+    fb.textContent = `Lançado em ${catLabel(category)}.`;
+    fb.className = 'quick-feedback show';
+    setTimeout(() => { fb.className = 'quick-feedback'; }, 2200);
+  });
+
+  $('prevMonth').addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() - 1); render(); });
+  $('nextMonth').addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() + 1); render(); });
+
+  let editingId = null;
+  function openEditModal(id) {
+    const e = expenses.find(x => x.id === id);
+    if (!e) return;
+    editingId = id;
+    $('eValor').value = e.amount;
+    $('eData').value = e.date;
+    $('eDescricao').value = e.description;
+    $('eCategoria').value = e.category;
+    $('editOverlay').classList.add('open');
+  }
+  $('eCancelBtn').addEventListener('click', () => { $('editOverlay').classList.remove('open'); editingId = null; });
+  $('eSaveBtn').addEventListener('click', () => {
+    const e = expenses.find(x => x.id === editingId);
+    if (!e) return;
+    const valor = parseFloat($('eValor').value);
+    if (!valor || valor <= 0) { $('eValor').focus(); return; }
+    e.amount = valor; e.date = $('eData').value || e.date;
+    e.description = $('eDescricao').value.trim() || catLabel($('eCategoria').value);
+    e.category = $('eCategoria').value;
+    saveExpenses();
+    $('editOverlay').classList.remove('open'); editingId = null;
+    render();
+  });
+  $('eDeleteBtn').addEventListener('click', () => {
+    expenses = expenses.filter(x => x.id !== editingId);
+    saveExpenses();
+    $('editOverlay').classList.remove('open'); editingId = null;
+    render();
+  });
+
+  $('clearAllBtn').addEventListener('click', () => $('clearOverlay').classList.add('open'));
+  $('cCancelBtn').addEventListener('click', () => $('clearOverlay').classList.remove('open'));
+  $('cConfirmBtn').addEventListener('click', () => {
+    expenses = [];
+    saveExpenses();
+    $('clearOverlay').classList.remove('open');
+    render();
+  });
+
+  function buildExtrato(monthEntries, monthLabel) {
+    const total = monthEntries.reduce((s, e) => s + e.amount, 0);
+    let lines = [];
+    lines.push('EXTRATO — ' + monthLabel.toUpperCase());
+    lines.push('Total do mês: ' + formatBRL(total));
+    lines.push('');
+    const byCat = {};
+    monthEntries.forEach(e => { (byCat[e.category] = byCat[e.category] || []).push(e); });
+    const catIds = Object.keys(byCat).sort((a, b) => {
+      const ta = byCat[a].reduce((s, e) => s + e.amount, 0);
+      const tb = byCat[b].reduce((s, e) => s + e.amount, 0);
+      return tb - ta;
+    });
+    catIds.forEach(catId => {
+      const items = byCat[catId].slice().sort((a, b) => a.date.localeCompare(b.date));
+      const subtotal = items.reduce((s, e) => s + e.amount, 0);
+      lines.push(catLabel(catId) + ' — ' + formatBRL(subtotal));
+      items.forEach(e => {
+        const d = parseISODate(e.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        const desc = (e.description || '').padEnd(24, ' ').slice(0, 24);
+        lines.push('  ' + d + '  ' + desc + '  ' + formatBRL(e.amount));
+      });
+      lines.push('');
+    });
+    return lines.join('\n').trim();
+  }
+
+  $('extratoBtn').addEventListener('click', () => {
+    const monthEntries = entriesForViewMonth();
+    const monthLabel = viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    $('extratoTitle').textContent = 'Extrato de ' + monthLabel;
+    $('extratoText').value = monthEntries.length ? buildExtrato(monthEntries, monthLabel) : 'Nenhum gasto lançado neste mês ainda.';
+    $('extratoOverlay').classList.add('open');
+  });
+  $('extratoCloseBtn').addEventListener('click', () => $('extratoOverlay').classList.remove('open'));
+  $('extratoCopyBtn').addEventListener('click', async () => {
+    const el = $('extratoText');
+    el.focus(); el.select();
+    const fb = $('extratoCopyFeedback');
+    try {
+      await navigator.clipboard.writeText(el.value);
+      fb.textContent = 'Copiado!';
+    } catch (e) {
+      fb.textContent = 'Selecionado — use Ctrl/Cmd+C.';
+    }
+    setTimeout(() => { fb.textContent = ''; }, 2500);
+  });
+
+  $('toggleBackup').addEventListener('click', () => {
+    const panel = $('backupPanel');
+    const open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    $('toggleBackup').textContent = open ? '+ exportar / importar backup' : '- ocultar backup';
+    if (!open) updateBackupText();
+  });
+
+  $('copyBackupBtn').addEventListener('click', async () => {
+    const el = $('backupText');
+    updateBackupText();
+    el.focus(); el.select();
+    const fb = $('copyFeedback');
+    try {
+      await navigator.clipboard.writeText(el.value);
+      fb.textContent = 'Copiado!';
+    } catch (e) {
+      fb.textContent = 'Selecionado — use Ctrl/Cmd+C pra copiar.';
+    }
+    setTimeout(() => { fb.textContent = ''; }, 2500);
+  });
+
+  $('restoreBtn').addEventListener('click', () => {
+    const fb = $('restoreFeedback');
+    const raw = $('restoreText').value.trim();
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) throw new Error('formato invalido');
+      expenses = parsed;
+      saveExpenses();
+      render();
+      fb.textContent = 'Restaurado!';
+      $('restoreText').value = '';
+    } catch (e) {
+      fb.textContent = 'Não consegui ler esse texto. Confira se colou certinho.';
+    }
+    setTimeout(() => { fb.textContent = ''; }, 3000);
+  });
+
+  loadExpenses();
+})();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(function (e) {
+      console.error('Falha ao registrar service worker:', e);
+    });
+  });
+}
+</script>
+</body>
+</html>
