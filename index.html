@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Gastos do dia a dia</title>
 <meta name="description" content="Lance seus gastos do dia a dia rapidinho e veja o extrato do mês.">
 <meta name="theme-color" content="#1E2A1F">
@@ -15,7 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-  html, body { margin: 0; padding: 0; background: #E7EEE1; }
+  html, body { margin: 0; padding: 0; background: #E7EEE1; touch-action: pan-y; overflow-x: hidden; }
   #ga-root {
     --paper: #E7EEE1;
     --ink: #1E2A1F;
@@ -24,6 +24,7 @@
     --rule: #C4D4BB;
     --rule-strong: #9CB491;
     --debit: #9B3A2E;
+    --credit: #3E6B4E;
     --white: #FDFCF9;
 
     --c-cachaca: #8A5A2E;
@@ -73,7 +74,9 @@
   #ga-root .amount-display {
     text-align: center; font-size: 2.3rem; font-weight: 600; letter-spacing: -0.02em;
     padding: 12px 0; border-bottom: 2px solid var(--rule-strong); margin-bottom: 6px;
+    transition: color 0.2s, transform 0.2s;
   }
+  #ga-root .amount-display.success { color: var(--credit); transform: scale(1.06); }
   #ga-root .desc-input {
     display: block; width: 100%; border: none; border-bottom: 1px solid var(--rule); background: transparent;
     font-family: inherit; font-size: 0.9rem; color: var(--ink); padding: 8px 2px; outline: none; margin-bottom: 12px;
@@ -385,12 +388,18 @@
     saveExpenses();
     viewDate = new Date(); viewDate.setDate(1);
     render();
+    const amountEl = $('amountDisplay');
+    amountEl.textContent = '✓ Adicionado';
+    amountEl.classList.add('success');
     digitBuffer = '';
-    updateAmountDisplay();
     $('descInput').value = '';
     categoryManuallySet = false;
     fb.textContent = `Lançado em ${catLabel(category)} · ${paymentLabel(paymentType)}.`;
     fb.className = 'quick-feedback show';
+    setTimeout(() => {
+      amountEl.classList.remove('success');
+      updateAmountDisplay();
+    }, 900);
     setTimeout(() => { fb.className = 'quick-feedback'; }, 2200);
   }
 
