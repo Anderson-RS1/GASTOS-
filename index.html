@@ -76,16 +76,25 @@
 
   #ga-root hr.rule { border: none; border-top: 1px solid var(--rule-strong); margin: 22px 0 6px; }
 
-  #ga-root .date-group-label { font-size: 0.75rem; color: var(--ink-faint); margin: 16px 0 4px; text-transform: capitalize; }
+  #ga-root .payment-toggle { display: flex; gap: 6px; margin-top: 10px; }
+  #ga-root .pay-btn {
+    flex: 1; background: var(--white); border: 1px solid var(--rule-strong); color: var(--ink-soft);
+    border-radius: 8px; padding: 6px 0; font-size: 0.78rem; cursor: pointer; font-family: inherit;
+  }
+  #ga-root .pay-btn.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
+
   #ga-root .entry-row {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    display: flex; flex-direction: column; gap: 4px;
     padding: 10px 2px; border-bottom: 1px solid var(--rule); cursor: pointer;
   }
   #ga-root .entry-row:active { background: rgba(0,0,0,0.02); }
-  #ga-root .entry-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  #ga-root .cat-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-  #ga-root .entry-desc { font-size: 0.92rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #ga-root .entry-cat { font-size: 0.72rem; color: var(--ink-faint); }
+  #ga-root .entry-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  #ga-root .entry-date { font-size: 0.75rem; color: var(--ink-faint); white-space: nowrap; }
+  #ga-root .entry-desc { font-size: 0.92rem; color: var(--ink); }
+  #ga-root .entry-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  #ga-root .tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; line-height: 1.4; }
+  #ga-root .tag-cat { color: var(--white); }
+  #ga-root .tag-pay { border: 1px solid var(--rule-strong); color: var(--ink-soft); background: transparent; }
   #ga-root .entry-amt { color: var(--debit); font-size: 0.92rem; flex-shrink: 0; }
 
   #ga-root .empty-state { text-align: center; color: var(--ink-faint); font-size: 0.85rem; padding: 30px 10px; }
@@ -132,6 +141,11 @@
     <input type="text" id="quickInput" placeholder="12 cafezinho" autocomplete="off">
     <button type="submit" aria-label="Adicionar">→</button>
   </form>
+  <div class="payment-toggle" id="paymentToggle">
+    <button type="button" class="pay-btn active" data-pay="pix">Pix</button>
+    <button type="button" class="pay-btn" data-pay="debito">Débito</button>
+    <button type="button" class="pay-btn" data-pay="credito">Crédito</button>
+  </div>
   <div class="quick-feedback" id="quickFeedback"></div>
 
   <hr class="rule">
@@ -165,7 +179,10 @@
       <div class="field" style="flex:1"><label for="eData">Data</label><input type="date" id="eData"></div>
     </div>
     <div class="field"><label for="eDescricao">Descrição</label><input type="text" id="eDescricao"></div>
-    <div class="field"><label for="eCategoria">Categoria</label><select id="eCategoria"></select></div>
+    <div class="field-row">
+      <div class="field" style="flex:1"><label for="eCategoria">Categoria</label><select id="eCategoria"></select></div>
+      <div class="field" style="flex:1"><label for="ePagamento">Pagamento</label><select id="ePagamento"></select></div>
+    </div>
     <div class="modal-actions">
       <button class="delete-btn" id="eDeleteBtn" type="button">Excluir</button>
       <div class="right-actions">
@@ -216,10 +233,16 @@
     { id: 'outros', label: 'Outros', keywords: [] }
   ];
   const CAT_COLOR = { alimentacao: 'var(--c-alimentacao)', transporte: 'var(--c-transporte)', moradia: 'var(--c-moradia)', saude: 'var(--c-saude)', lazer: 'var(--c-lazer)', educacao: 'var(--c-educacao)', outros: 'var(--c-outros)' };
+  const PAYMENT_TYPES = [
+    { id: 'pix', label: 'Pix' },
+    { id: 'debito', label: 'Débito' },
+    { id: 'credito', label: 'Crédito' }
+  ];
   const STORAGE_KEY = 'gastos_diarios_v1';
 
   let expenses = [];
   let viewDate = new Date(); viewDate.setDate(1);
+  let currentPayment = 'pix';
 
   const $ = (id) => document.getElementById(id);
 
@@ -230,6 +253,15 @@
     return 'outros';
   }
   function catLabel(id) { const c = CATEGORIES.find(c => c.id === id); return c ? c.label : 'Outros'; }
+  function paymentLabel(id) { const p = PAYMENT_TYPES.find(p => p.id === id); return p ? p.label : 'Pix'; }
+  function extractPayment(desc) {
+    const m = desc.match(/\b(pix|d[ée]bito|cr[ée]dito)\b/i);
+    if (!m) return { payment: null, desc };
+    const word = normalize(m[1]);
+    const type = word.indexOf('cred') !== -1 ? 'credito' : (word.indexOf('deb') !== -1 ? 'debito' : 'pix');
+    const cleaned = (desc.slice(0, m.index) + desc.slice(m.index + m[0].length)).trim().replace(/^[\s,.-]+|[\s,.-]+$/g, '');
+    return { payment: type, desc: cleaned };
+  }
   function formatBRL(n) { return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function parseISODate(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
   function todayISO() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -241,6 +273,18 @@
     CATEGORIES.forEach(c => { const opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.label; sel.appendChild(opt); });
   }
   populateCategorySelect($('eCategoria'));
+  function populatePaymentSelect(sel) {
+    sel.innerHTML = '';
+    PAYMENT_TYPES.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.label; sel.appendChild(opt); });
+  }
+  populatePaymentSelect($('ePagamento'));
+
+  document.querySelectorAll('#paymentToggle .pay-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentPayment = btn.dataset.pay;
+      document.querySelectorAll('#paymentToggle .pay-btn').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
 
   // ---- persistência real via localStorage (funciona porque aqui fora do Claude não tem o sandbox que bloqueava) ----
   function loadExpenses() {
@@ -287,26 +331,20 @@
       ledger.innerHTML = '<div class="empty-state">Nada lançado neste mês ainda.<br>Digite acima pra começar — tipo "12 cafezinho".</div>';
       return;
     }
-    let lastDate = null;
     monthEntries.forEach(e => {
-      if (e.date !== lastDate) {
-        lastDate = e.date;
-        const label = document.createElement('div');
-        label.className = 'date-group-label';
-        label.textContent = parseISODate(e.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', weekday: 'short' });
-        ledger.appendChild(label);
-      }
       const row = document.createElement('div');
       row.className = 'entry-row';
+      const dateLabel = parseISODate(e.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
       row.innerHTML = `
-        <div class="entry-left">
-          <span class="cat-dot" style="background:${CAT_COLOR[e.category]}"></span>
-          <div>
-            <div class="entry-desc">${escapeHtml(e.description || catLabel(e.category))}</div>
-            <div class="entry-cat">${catLabel(e.category)}</div>
-          </div>
+        <div class="entry-top">
+          <span class="entry-date">${dateLabel}</span>
+          <span class="entry-amt mono">${formatBRL(e.amount)}</span>
         </div>
-        <div class="entry-amt mono">${formatBRL(e.amount)}</div>
+        <div class="entry-desc">${escapeHtml(e.description || catLabel(e.category))}</div>
+        <div class="entry-tags">
+          <span class="tag tag-cat" style="background:${CAT_COLOR[e.category]}">${catLabel(e.category)}</span>
+          <span class="tag tag-pay">${paymentLabel(e.paymentType)}</span>
+        </div>
       `;
       row.addEventListener('click', () => openEditModal(e.id));
       ledger.appendChild(row);
@@ -330,14 +368,17 @@
     const amount = parseFloat(match[1].replace(',', '.'));
     let description = (raw.slice(0, match.index) + raw.slice(match.index + match[0].length)).trim();
     description = description.replace(/^[\s,.-]+|[\s,.-]+$/g, '');
+    const payResult = extractPayment(description);
+    description = payResult.desc;
+    const paymentType = payResult.payment || currentPayment;
     const category = classify(description);
-    const entry = { id: uid(), date: todayISO(), amount, category, description: description || catLabel(category), createdAt: Date.now() };
+    const entry = { id: uid(), date: todayISO(), amount, category, paymentType, description: description || catLabel(category), createdAt: Date.now() };
     expenses.push(entry);
     saveExpenses();
     viewDate = new Date(); viewDate.setDate(1);
     render();
     input.value = '';
-    fb.textContent = `Lançado em ${catLabel(category)}.`;
+    fb.textContent = `Lançado em ${catLabel(category)} · ${paymentLabel(paymentType)}.`;
     fb.className = 'quick-feedback show';
     setTimeout(() => { fb.className = 'quick-feedback'; }, 2200);
   });
@@ -354,6 +395,7 @@
     $('eData').value = e.date;
     $('eDescricao').value = e.description;
     $('eCategoria').value = e.category;
+    $('ePagamento').value = e.paymentType || 'pix';
     $('editOverlay').classList.add('open');
   }
   $('eCancelBtn').addEventListener('click', () => { $('editOverlay').classList.remove('open'); editingId = null; });
@@ -365,6 +407,7 @@
     e.amount = valor; e.date = $('eData').value || e.date;
     e.description = $('eDescricao').value.trim() || catLabel($('eCategoria').value);
     e.category = $('eCategoria').value;
+    e.paymentType = $('ePagamento').value;
     saveExpenses();
     $('editOverlay').classList.remove('open'); editingId = null;
     render();
@@ -404,10 +447,16 @@
       lines.push(catLabel(catId) + ' — ' + formatBRL(subtotal));
       items.forEach(e => {
         const d = parseISODate(e.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        const desc = (e.description || '').padEnd(24, ' ').slice(0, 24);
-        lines.push('  ' + d + '  ' + desc + '  ' + formatBRL(e.amount));
+        const desc = (e.description || '').padEnd(22, ' ').slice(0, 22);
+        const pay = ('[' + paymentLabel(e.paymentType) + ']').padEnd(10, ' ');
+        lines.push('  ' + d + '  ' + desc + '  ' + pay + '  ' + formatBRL(e.amount));
       });
       lines.push('');
+    });
+    lines.push('Por forma de pagamento:');
+    PAYMENT_TYPES.forEach(p => {
+      const subtotal = monthEntries.filter(e => (e.paymentType || 'pix') === p.id).reduce((s, e) => s + e.amount, 0);
+      lines.push('  ' + p.label.padEnd(10, ' ') + formatBRL(subtotal));
     });
     return lines.join('\n').trim();
   }
