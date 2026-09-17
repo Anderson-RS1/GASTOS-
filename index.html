@@ -92,7 +92,7 @@
     height: 70px; line-height: 70px; padding: 0; border-bottom: 2px solid var(--rule-strong);
     overflow: visible; position: relative;
   }
-  #ga-root .fire-canvas { display: block; }
+  #ga-root .fire-canvas { display: block; position: absolute; left: 0; bottom: 0; z-index: 5; pointer-events: none; }
   #ga-root .confirm-arrow {
     flex-shrink: 0; width: 52px; height: 52px; border-radius: 12px; border: none;
     background: var(--ink); color: var(--white); font-size: 1.5rem; cursor: pointer;
@@ -377,9 +377,9 @@
     if (guess !== selectedCategory) { selectedCategory = guess; renderCategoryChips(); }
   });
 
-  function buildFireMask(text, W, H, dpr) {
+  function buildFireMask(text, W, canvasH, baseY, dpr) {
     const maskCanvas = document.createElement('canvas');
-    maskCanvas.width = W * dpr; maskCanvas.height = H * dpr;
+    maskCanvas.width = W * dpr; maskCanvas.height = canvasH * dpr;
     const mctx = maskCanvas.getContext('2d');
     mctx.scale(dpr, dpr);
     mctx.font = "600 33px 'IBM Plex Mono', monospace";
@@ -393,12 +393,12 @@
     for (let i = 0; i < text.length; i++) {
       if (text[i] === ' ') continue;
       const cx = startX + i * charWidth + charWidth / 2;
-      mctx.fillText('🔥', cx, H / 2 + 2);
+      mctx.fillText('🔥', cx, baseY);
     }
-    const data = mctx.getImageData(0, 0, W * dpr, H * dpr).data;
+    const data = mctx.getImageData(0, 0, W * dpr, canvasH * dpr).data;
     const pts = [];
     const wpx = W * dpr;
-    for (let y = 0; y < H * dpr; y++) {
+    for (let y = 0; y < canvasH * dpr; y++) {
       for (let x = 0; x < wpx; x++) {
         if (data[(y * wpx + x) * 4 + 3] > 100) pts.push({ x: x / dpr, y: y / dpr });
       }
@@ -413,13 +413,16 @@
   function playFireAnimation(amountEl, text, onDone) {
     const dpr = window.devicePixelRatio || 1;
     const W = amountEl.clientWidth, H = amountEl.clientHeight;
+    const EXTRA = 150;
+    const canvasH = H + EXTRA;
+    const baseY = EXTRA + H / 2 + 2;
     amountEl.innerHTML = '<canvas class="fire-canvas"></canvas>';
     const canvas = amountEl.querySelector('.fire-canvas');
-    canvas.width = W * dpr; canvas.height = H * dpr;
-    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    canvas.width = W * dpr; canvas.height = canvasH * dpr;
+    canvas.style.width = W + 'px'; canvas.style.height = canvasH + 'px';
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-    const maskPoints = buildFireMask(text, W, H, dpr);
+    const maskPoints = buildFireMask(text, W, canvasH, baseY, dpr);
     let particles = [], smoke = [];
     let startTime = 0;
     const BURST = 850, TAPER = 500, TOTAL = 1700;
@@ -439,7 +442,7 @@
     function frame(now) {
       if (!startTime) startTime = now;
       const elapsed = now - startTime;
-      ctx.clearRect(0, 0, W, H);
+      ctx.clearRect(0, 0, W, canvasH);
       let spawnCount = 0;
       if (elapsed < BURST) spawnCount = 4;
       else if (elapsed < BURST + TAPER) spawnCount = Math.round(4 * (1 - (elapsed - BURST) / TAPER));
