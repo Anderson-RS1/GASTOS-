@@ -377,15 +377,24 @@
     if (guess !== selectedCategory) { selectedCategory = guess; renderCategoryChips(); }
   });
 
-  function buildFireMask(W, H, dpr) {
+  function buildFireMask(text, W, H, dpr) {
     const maskCanvas = document.createElement('canvas');
     maskCanvas.width = W * dpr; maskCanvas.height = H * dpr;
     const mctx = maskCanvas.getContext('2d');
     mctx.scale(dpr, dpr);
-    mctx.font = '46px sans-serif';
+    mctx.font = "600 33px 'IBM Plex Mono', monospace";
+    const totalWidth = mctx.measureText(text).width;
+    const startX = (W - totalWidth) / 2;
+    const charWidth = totalWidth / text.length;
+    const flameSize = Math.max(14, Math.min(30, charWidth * 1.55));
     mctx.textAlign = 'center';
     mctx.textBaseline = 'middle';
-    mctx.fillText('🔥', W / 2, H / 2 + 2);
+    mctx.font = flameSize + 'px sans-serif';
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === ' ') continue;
+      const cx = startX + i * charWidth + charWidth / 2;
+      mctx.fillText('🔥', cx, H / 2 + 2);
+    }
     const data = mctx.getImageData(0, 0, W * dpr, H * dpr).data;
     const pts = [];
     const wpx = W * dpr;
@@ -401,7 +410,7 @@
     if (t < 0.7) { const k = (t - 0.3) / 0.4; return `rgba(255,${Math.round(150 - 70 * k)},${Math.round(30 - 25 * k)},${1 - 0.15 * k})`; }
     const k = (t - 0.7) / 0.3; return `rgba(${Math.round(210 - 130 * k)},${Math.round(50 - 35 * k)},${Math.round(10 - 8 * k)},${0.85 * (1 - k)})`;
   }
-  function playFireAnimation(amountEl, onDone) {
+  function playFireAnimation(amountEl, text, onDone) {
     const dpr = window.devicePixelRatio || 1;
     const W = amountEl.clientWidth, H = amountEl.clientHeight;
     amountEl.innerHTML = '<canvas class="fire-canvas"></canvas>';
@@ -410,7 +419,7 @@
     canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
-    const maskPoints = buildFireMask(W, H, dpr);
+    const maskPoints = buildFireMask(text, W, H, dpr);
     let particles = [], smoke = [];
     let startTime = 0;
     const BURST = 850, TAPER = 500, TOTAL = 1700;
@@ -484,12 +493,13 @@
     viewDate = new Date(); viewDate.setDate(1);
     render();
     const amountEl = $('amountDisplay');
+    const burnedText = formatBRL(amount);
     digitBuffer = '';
     $('descInput').value = '';
     categoryManuallySet = false;
     fb.textContent = `Lançado em ${catLabel(category)} · ${paymentLabel(paymentType)}.`;
     fb.className = 'quick-feedback show';
-    playFireAnimation(amountEl, () => { updateAmountDisplay(); });
+    playFireAnimation(amountEl, burnedText, () => { updateAmountDisplay(); });
     setTimeout(() => { fb.className = 'quick-feedback'; }, 2200);
   }
 
