@@ -90,15 +90,9 @@
   #ga-root .amount-display {
     flex: 1; min-width: 0; text-align: center; font-size: 2.3rem; font-weight: 600; letter-spacing: -0.02em;
     height: 70px; line-height: 70px; padding: 0; border-bottom: 2px solid var(--rule-strong);
-    transition: color 0.2s, transform 0.2s; overflow: visible;
+    overflow: visible; position: relative;
   }
-  #ga-root .amount-display.success { }
-  #ga-root .fly-money { display: inline-block; animation: flyAway 0.95s ease-out forwards; }
-  @keyframes flyAway {
-    0%   { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
-    15%  { opacity: 1; transform: translate(20px, -26px) rotate(-4deg) scale(1.6); }
-    100% { opacity: 1; transform: translate(340px, -420px) rotate(28deg) scale(2.2); }
-  }
+  #ga-root .fire-canvas { display: block; }
   #ga-root .confirm-arrow {
     flex-shrink: 0; width: 52px; height: 52px; border-radius: 12px; border: none;
     background: var(--ink); color: var(--white); font-size: 1.5rem; cursor: pointer;
@@ -383,6 +377,95 @@
     if (guess !== selectedCategory) { selectedCategory = guess; renderCategoryChips(); }
   });
 
+  function buildFireMask(W, H, dpr) {
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = W * dpr; maskCanvas.height = H * dpr;
+    const mctx = maskCanvas.getContext('2d');
+    mctx.scale(dpr, dpr);
+    mctx.font = '46px sans-serif';
+    mctx.textAlign = 'center';
+    mctx.textBaseline = 'middle';
+    mctx.fillText('🔥', W / 2, H / 2 + 2);
+    const data = mctx.getImageData(0, 0, W * dpr, H * dpr).data;
+    const pts = [];
+    const wpx = W * dpr;
+    for (let y = 0; y < H * dpr; y++) {
+      for (let x = 0; x < wpx; x++) {
+        if (data[(y * wpx + x) * 4 + 3] > 100) pts.push({ x: x / dpr, y: y / dpr });
+      }
+    }
+    return pts;
+  }
+  function fireColorForLife(t) {
+    if (t < 0.3) { const k = t / 0.3; return `rgba(255,${Math.round(250 - 40 * k)},${Math.round(180 - 140 * k)},1)`; }
+    if (t < 0.7) { const k = (t - 0.3) / 0.4; return `rgba(255,${Math.round(150 - 70 * k)},${Math.round(30 - 25 * k)},${1 - 0.15 * k})`; }
+    const k = (t - 0.7) / 0.3; return `rgba(${Math.round(210 - 130 * k)},${Math.round(50 - 35 * k)},${Math.round(10 - 8 * k)},${0.85 * (1 - k)})`;
+  }
+  function playFireAnimation(amountEl, onDone) {
+    const dpr = window.devicePixelRatio || 1;
+    const W = amountEl.clientWidth, H = amountEl.clientHeight;
+    amountEl.innerHTML = '<canvas class="fire-canvas"></canvas>';
+    const canvas = amountEl.querySelector('.fire-canvas');
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const maskPoints = buildFireMask(W, H, dpr);
+    let particles = [], smoke = [];
+    let startTime = 0;
+    const BURST = 850, TAPER = 500, TOTAL = 1700;
+    function spawnParticle() {
+      const p = maskPoints[(Math.random() * maskPoints.length) | 0];
+      if (!p) return;
+      particles.push({ x: p.x + (Math.random() - 0.5) * 2, y: p.y + (Math.random() - 0.5) * 2,
+        vx: (Math.random() - 0.5) * 0.7, vy: -(0.7 + Math.random() * 1.1),
+        life: 0, maxLife: 26 + Math.random() * 22, size: 5 + Math.random() * 5 });
+    }
+    function spawnSmoke() {
+      const p = maskPoints[(Math.random() * maskPoints.length) | 0];
+      if (!p) return;
+      smoke.push({ x: p.x, y: p.y - 8, vx: (Math.random() - 0.5) * 0.6, vy: -(0.35 + Math.random() * 0.55),
+        life: 0, maxLife: 90 + Math.random() * 50, size: 9 + Math.random() * 9 });
+    }
+    function frame(now) {
+      if (!startTime) startTime = now;
+      const elapsed = now - startTime;
+      ctx.clearRect(0, 0, W, H);
+      let spawnCount = 0;
+      if (elapsed < BURST) spawnCount = 4;
+      else if (elapsed < BURST + TAPER) spawnCount = Math.round(4 * (1 - (elapsed - BURST) / TAPER));
+      for (let i = 0; i < spawnCount; i++) spawnParticle();
+      if (elapsed > 200 && elapsed < BURST + TAPER + 700) {
+        if (Math.random() < 0.85) spawnSmoke();
+        if (Math.random() < 0.4) spawnSmoke();
+      }
+      particles.forEach(p => { p.life++; p.x += p.vx; p.y += p.vy; p.vy -= 0.012; });
+      particles = particles.filter(p => p.life < p.maxLife);
+      smoke.forEach(p => { p.life++; p.x += p.vx; p.y += p.vy; });
+      smoke = smoke.filter(p => p.life < p.maxLife);
+      smoke.forEach(p => {
+        const t = p.life / p.maxLife; const r = p.size * (1 + t * 1.9);
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+        grad.addColorStop(0, `rgba(60,60,56,${0.42 * (1 - t)})`);
+        grad.addColorStop(1, 'rgba(60,60,56,0)');
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+      });
+      particles.forEach(p => {
+        const t = p.life / p.maxLife; const r = p.size * (1 - t * 0.55);
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+        grad.addColorStop(0, fireColorForLife(t));
+        grad.addColorStop(1, 'rgba(255,0,0,0)');
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+      });
+      if (elapsed < TOTAL || particles.length > 0 || smoke.length > 0) {
+        requestAnimationFrame(frame);
+      } else {
+        onDone();
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
   function confirmEntry() {
     const amount = bufferToAmount();
     const fb = $('quickFeedback');
@@ -401,17 +484,12 @@
     viewDate = new Date(); viewDate.setDate(1);
     render();
     const amountEl = $('amountDisplay');
-    amountEl.innerHTML = '<span class="fly-money">💸</span>';
-    amountEl.classList.add('success');
     digitBuffer = '';
     $('descInput').value = '';
     categoryManuallySet = false;
     fb.textContent = `Lançado em ${catLabel(category)} · ${paymentLabel(paymentType)}.`;
     fb.className = 'quick-feedback show';
-    setTimeout(() => {
-      amountEl.classList.remove('success');
-      updateAmountDisplay();
-    }, 1000);
+    playFireAnimation(amountEl, () => { updateAmountDisplay(); });
     setTimeout(() => { fb.className = 'quick-feedback'; }, 2200);
   }
 
