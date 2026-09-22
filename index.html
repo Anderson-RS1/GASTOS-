@@ -2,748 +2,1059 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Gastos do dia a dia</title>
-<meta name="description" content="Lance seus gastos do dia a dia rapidinho e veja o extrato do mês.">
 <meta name="theme-color" content="#1E2A1F">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-apple-touch.png">
+<link rel="icon" href="./icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Gastos">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  html, body { margin: 0; padding: 0; background: #E7EEE1; touch-action: pan-y; overflow-x: hidden; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-  #ga-root {
-    width: 100%;
-    --paper: #E7EEE1;
-    --ink: #1E2A1F;
-    --ink-soft: #5C6B57;
-    --ink-faint: #8A9784;
-    --rule: #C4D4BB;
-    --rule-strong: #9CB491;
-    --debit: #9B3A2E;
-    --credit: #3E6B4E;
-    --white: #FDFCF9;
+  :root{
+    --paper:#E7EEE1;
+    --ink:#1E2A1F;
+    --ink-soft:#5C6B57;
+    --ink-faint:#8A9784;
+    --rule:#C4D4BB;
+    --rule-strong:#9CB491;
+    --debit:#9B3A2E;
+    --credit:#3E6B4E;
+    --white:#FDFCF9;
 
-    --c-cachaca: #8A5A2E;
-    --c-hydro: #4A3220;
-    --c-mercado: #4E7A5B;
-    --c-delivery: #9B3A2E;
-    --c-apostas: #7A4E72;
-    --c-lavanderia: #3E5B7A;
-    --c-gata: #B5657A;
-    --c-coleta: #3E7A78;
-    --c-saude: #7A7A3E;
-    --c-outros: #756D60;
-
-    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
-    color: var(--ink);
-    background: var(--paper);
-    min-height: 100vh;
-    box-sizing: border-box;
-    padding: max(24px, env(safe-area-inset-top)) 16px calc(36px + env(safe-area-inset-bottom));
-    max-width: 460px;
-    margin: 0 auto;
+    --cat-cachaca:#9B3A2E;
+    --cat-mercado:#3E6B4E;
+    --cat-comidafora:#C9862A;
+    --cat-bets:#6B3E86;
+    --cat-lavanderia:#3E7A8C;
+    --cat-gata:#C23B6E;
+    --cat-coletas:#7A6A4E;
+    --cat-saude:#2E7D6B;
+    --cat-hydro:#8C6A3E;
+    --cat-outros:#8A9784;
   }
-  #ga-root * { box-sizing: border-box; }
-  #ga-root .mono { font-family: 'IBM Plex Mono', monospace; }
-
-  #ga-root button {
-    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    color:var(--ink);
+    overscroll-behavior:none;
+    touch-action:manipulation;
   }
-  #ga-root .month-nav {
-    display: flex; align-items: center; justify-content: center; gap: 14px;
-    color: var(--ink-soft); font-size: 0.85rem; margin-bottom: 4px;
+  #ga-root{
+    max-width:480px; margin:0 auto; min-height:100vh;
+    background:var(--paper);
+    display:flex; flex-direction:column;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom));
+    position:relative;
+    user-select:none;
   }
-  #ga-root .month-nav button { background: none; border: none; color: var(--ink-soft); font-size: 1.1rem; cursor: pointer; padding: 6px 10px; }
-  #ga-root .month-label { min-width: 130px; text-align: center; text-transform: capitalize; }
+  #ga-root input, #ga-root textarea, #ga-root select{ user-select:text; }
 
-  #ga-root .total-hero { text-align: center; font-size: 2.5rem; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 16px; }
-
-  #ga-root .quick-feedback {
-    font-size: 0.78rem; margin-top: 10px; min-height: 16px; color: var(--ink-soft); text-align: center;
-    opacity: 0; transition: opacity 0.25s;
+  .month-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:calc(14px + env(safe-area-inset-top)) 18px 8px;
   }
-  #ga-root .quick-feedback.show { opacity: 1; }
-  #ga-root .quick-feedback.error { color: var(--debit); }
-
-  #ga-root .desc-box {
-    display: block; width: 100%; border: 1px solid var(--rule-strong); border-radius: 10px;
-    background: var(--white); font-family: inherit; font-size: 0.92rem; color: var(--ink);
-    padding: 12px 14px; outline: none; margin: 14px 0; min-height: 46px;
+  .month-nav button{
+    background:none; border:none; color:var(--ink-soft);
+    font-size:20px; padding:6px 10px; cursor:pointer; touch-action:manipulation;
   }
-  #ga-root .desc-box::placeholder { color: var(--ink-faint); }
-  #ga-root .desc-box:focus { border-color: var(--ink); }
-
-  #ga-root .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-  #ga-root .chip {
-    font-size: 0.76rem; padding: 6px 12px; border-radius: 14px; border: 1px solid var(--rule-strong);
-    background: var(--white); color: var(--ink-soft); cursor: pointer; font-family: inherit;
-  }
-  #ga-root .chip.active { color: var(--white); border-color: transparent; }
-
-  #ga-root .amount-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-  #ga-root .amount-display {
-    flex: 1; min-width: 0; text-align: center; font-size: 2.3rem; font-weight: 600; letter-spacing: -0.02em;
-    height: 70px; line-height: 70px; padding: 0; border-bottom: 2px solid var(--rule-strong);
-    overflow: visible; position: relative;
-  }
-  #ga-root .fire-canvas { display: block; position: absolute; left: 0; bottom: 0; z-index: 5; pointer-events: none; }
-  #ga-root .confirm-arrow {
-    flex-shrink: 0; width: 52px; height: 52px; border-radius: 12px; border: none;
-    background: var(--ink); color: var(--white); font-size: 1.5rem; cursor: pointer;
-  }
-  #ga-root .confirm-arrow:active { background: var(--ink-soft); }
-
-  #ga-root .keypad { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; min-width: 0; }
-  #ga-root .key {
-    height: 54px; border-radius: 10px; background: var(--white); border: 1px solid var(--rule-strong);
-    font-size: 1.3rem; color: var(--ink); cursor: pointer; font-family: 'IBM Plex Mono', monospace;
-  }
-  #ga-root .key:active { background: var(--rule); }
-  #ga-root .key-back { font-size: 1.1rem; color: var(--ink-soft); }
-
-  #ga-root hr.rule { border: none; border-top: 1px solid var(--rule-strong); margin: 22px 0 6px; }
-
-  #ga-root .payment-toggle { display: flex; gap: 6px; margin-top: 10px; min-width: 0; }
-  #ga-root .pay-btn {
-    flex: 1; min-width: 0; background: var(--white); border: 1px solid var(--rule-strong); color: var(--ink-soft);
-    border-radius: 8px; padding: 6px 2px; font-size: 0.76rem; cursor: pointer; font-family: inherit;
-  }
-  #ga-root .pay-btn.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
-
-  #ga-root .entry-row {
-    display: flex; flex-direction: column; gap: 4px;
-    padding: 10px 2px; border-bottom: 1px solid var(--rule); cursor: pointer;
-  }
-  #ga-root .entry-row:active { background: rgba(0,0,0,0.02); }
-  #ga-root .entry-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-  #ga-root .entry-date { font-size: 0.75rem; color: var(--ink-faint); white-space: nowrap; }
-  #ga-root .entry-desc { font-size: 0.92rem; color: var(--ink); }
-  #ga-root .entry-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-  #ga-root .tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; line-height: 1.4; }
-  #ga-root .tag-cat { color: var(--white); }
-  #ga-root .tag-pay { border: 1px solid var(--rule-strong); color: var(--ink-soft); background: transparent; }
-  #ga-root .entry-amt { color: var(--debit); font-size: 0.92rem; flex-shrink: 0; }
-
-  #ga-root .empty-state { text-align: center; color: var(--ink-faint); font-size: 0.85rem; padding: 30px 10px; }
-  #ga-root .loading-state { text-align: center; color: var(--ink-faint); font-size: 0.85rem; padding: 40px 0; }
-
-  #ga-root .footer-link {
-    display: block; text-align: center; margin-top: 26px; font-size: 0.75rem;
-    color: var(--ink-faint); background: none; border: none; cursor: pointer; text-decoration: underline;
-    text-underline-offset: 2px; width: 100%;
+  .month-nav .month-label{
+    font-family:'IBM Plex Mono', monospace; font-weight:600;
+    letter-spacing:1px; text-transform:uppercase; font-size:13px; color:var(--ink-soft);
   }
 
-  #ga-root .overlay { display: none; position: fixed; inset: 0; background: rgba(30,42,31,0.45); align-items: flex-end; justify-content: center; z-index: 50; }
-  #ga-root .overlay.open { display: flex; }
-  #ga-root .modal-sheet { background: var(--white); width: 100%; max-width: 460px; border-radius: 16px 16px 0 0; padding: 20px 18px calc(28px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 24px rgba(0,0,0,0.15); }
-  #ga-root .modal-sheet h3 { margin: 0 0 14px; font-size: 1rem; font-weight: 600; }
-  #ga-root .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-  #ga-root .field-row { display: flex; gap: 10px; }
-  #ga-root .field label { font-size: 0.72rem; color: var(--ink-soft); }
-  #ga-root .field input, #ga-root .field select {
-    font-family: inherit; font-size: 0.9rem; color: var(--ink);
-    border: 1px solid var(--rule-strong); border-radius: 6px; padding: 7px 8px; background: var(--white);
+  .total-hero{
+    text-align:center; padding:6px 18px 18px;
   }
-  #ga-root .modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
-  #ga-root .modal-actions .delete-btn { background: none; border: none; color: var(--debit); font-size: 0.85rem; cursor: pointer; }
-  #ga-root .modal-actions .right-actions { display: flex; gap: 8px; }
-  #ga-root .modal-actions button.cancel { background: none; border: 1px solid var(--rule-strong); color: var(--ink-soft); border-radius: 6px; padding: 8px 14px; font-size: 0.85rem; cursor: pointer; }
-  #ga-root .modal-actions button.save { background: var(--ink); color: var(--white); border: none; border-radius: 6px; padding: 8px 14px; font-size: 0.85rem; cursor: pointer; }
-  #ga-root .confirm-text { font-size: 0.88rem; color: var(--ink-soft); margin-bottom: 16px; }
+  .total-hero .amount{
+    font-family:'IBM Plex Mono', monospace; font-weight:700;
+    font-size:40px; color:var(--debit); letter-spacing:-0.5px;
+  }
+  .total-hero .amount.lucro{ color:var(--credit); }
+  .total-hero .sub{
+    margin-top:2px; font-size:11px; text-transform:uppercase;
+    letter-spacing:1.5px; color:var(--ink-faint); font-weight:600;
+  }
+
+  .entry-box{
+    margin:0 14px; background:var(--white);
+    border:1px solid var(--rule-strong); border-radius:14px;
+    padding:14px 14px 10px; position:relative; overflow:visible;
+  }
+
+  .chip-row{
+    display:flex; gap:6px; overflow-x:auto; padding-bottom:8px;
+    scrollbar-width:none;
+  }
+  .chip-row::-webkit-scrollbar{ display:none; }
+  .chip{
+    flex:0 0 auto; padding:7px 12px; border-radius:20px;
+    font-size:12.5px; font-weight:600; white-space:nowrap;
+    border:1.5px solid var(--rule-strong); background:var(--paper);
+    color:var(--ink-soft); cursor:pointer; touch-action:manipulation;
+  }
+  .chip.active{ color:var(--white); border-color:transparent; }
+
+  .toggle-row{
+    display:flex; gap:8px; margin-top:8px;
+  }
+  .toggle-group{ display:flex; flex:1; border:1.5px solid var(--rule-strong); border-radius:10px; overflow:hidden; }
+  .toggle-btn{
+    flex:1; text-align:center; padding:8px 4px; font-size:12px; font-weight:600;
+    background:var(--paper); color:var(--ink-soft); cursor:pointer; touch-action:manipulation;
+    border-right:1px solid var(--rule-strong);
+  }
+  .toggle-btn:last-child{ border-right:none; }
+  .toggle-btn.active-pay{ background:var(--ink); color:var(--white); }
+  .toggle-btn.active-gasto{ background:var(--debit); color:var(--white); }
+  .toggle-btn.active-ganho{ background:var(--credit); color:var(--white); }
+
+  .desc-box{ margin-top:10px; }
+  .desc-box input{
+    width:100%; border:1.5px solid var(--rule-strong); border-radius:10px;
+    padding:10px 12px; font-family:'IBM Plex Sans', sans-serif; font-size:14px;
+    background:var(--paper); color:var(--ink); outline:none;
+  }
+  .desc-box input::placeholder{ color:var(--ink-faint); }
+
+  .amount-row{
+    display:flex; align-items:center; gap:10px; margin-top:12px; position:relative;
+  }
+  .amount-display{
+    flex:1; height:70px; line-height:70px; padding:0 4px;
+    font-family:'IBM Plex Mono', monospace; font-weight:700;
+    font-size:34px; color:var(--ink); text-align:right;
+    position:relative; overflow:visible;
+  }
+  .amount-display .fly-money{
+    display:inline-block;
+  }
+  .amount-display.success .fly-money{
+    animation: fly-away 1s ease-in forwards;
+  }
+  @keyframes fly-away{
+    0%{ transform:translate(0,0) scale(1); opacity:1; }
+    100%{ transform:translate(60px,-140px) scale(1.6); opacity:0; }
+  }
+  #fireCanvas{
+    position:absolute; left:0; right:0; bottom:0;
+    width:100%; height:220px;
+    pointer-events:none; z-index:5;
+    display:none;
+  }
+  .confirm-arrow{
+    flex:0 0 auto; width:52px; height:52px; border-radius:50%;
+    background:var(--ink); color:var(--white); border:none;
+    font-size:22px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; touch-action:manipulation;
+  }
+  .confirm-arrow:active{ transform:scale(0.94); }
+
+  .keypad{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px;
+  }
+  .key{
+    background:var(--paper); border:1.5px solid var(--rule); border-radius:10px;
+    padding:14px 0; text-align:center; font-family:'IBM Plex Mono', monospace;
+    font-size:19px; font-weight:600; color:var(--ink); cursor:pointer;
+    touch-action:manipulation; -webkit-user-select:none;
+  }
+  .key:active{ background:var(--rule); }
+  .key.back{ color:var(--debit); font-size:16px; }
+
+  .extrato-btn-wrap{ padding:12px 14px 0; }
+  .extrato-btn{
+    width:100%; background:var(--ink); color:var(--white); border:none;
+    border-radius:10px; padding:12px; font-size:13px; font-weight:600;
+    letter-spacing:0.5px; cursor:pointer; touch-action:manipulation;
+  }
+
+  .ledger{ margin-top:16px; padding:0 14px; }
+  .ledger-row{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:10px 4px; border-bottom:1px solid var(--rule);
+    cursor:pointer;
+  }
+  .ledger-row .left{ flex:1; min-width:0; }
+  .ledger-row .top-line{
+    display:flex; justify-content:space-between; gap:8px;
+    font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600;
+  }
+  .ledger-row .top-line .date{ color:var(--ink-faint); }
+  .ledger-row .top-line .val{ color:var(--debit); }
+  .ledger-row .top-line .val.ganho{ color:var(--credit); }
+  .ledger-row .desc{ font-size:13.5px; color:var(--ink); margin-top:2px; }
+  .ledger-row .tags{ margin-top:4px; display:flex; gap:6px; flex-wrap:wrap; }
+  .tag{
+    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
+    padding:2px 7px; border-radius:8px; color:var(--white);
+  }
+  .tag.pay{ background:var(--ink-faint); }
+  .tag.ganho-tag{ background:var(--credit); }
+  .ledger-empty{ text-align:center; color:var(--ink-faint); font-size:13px; padding:30px 0; }
+
+  .panel-toggle{
+    margin:20px 14px 0; text-align:center; font-size:12px; color:var(--ink-faint);
+    text-decoration:underline; cursor:pointer;
+  }
+  .backup-panel{ margin:10px 14px 0; display:none; }
+  .backup-panel.open{ display:block; }
+  .backup-panel textarea{
+    width:100%; height:100px; font-family:'IBM Plex Mono', monospace; font-size:11px;
+    border:1px solid var(--rule-strong); border-radius:8px; padding:8px; background:var(--white);
+  }
+  .backup-panel .row{ display:flex; gap:8px; margin-top:6px; }
+  .backup-panel button{
+    flex:1; padding:9px; border-radius:8px; border:1px solid var(--rule-strong);
+    background:var(--white); font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .clear-all-btn{
+    margin:18px 14px 0; text-align:center; font-size:12px; color:var(--debit);
+    text-decoration:underline; cursor:pointer;
+  }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(30,42,31,0.55);
+    display:none; align-items:flex-end; justify-content:center; z-index:50;
+  }
+  .overlay.open{ display:flex; }
+  .sheet{
+    width:100%; max-width:480px; background:var(--paper);
+    border-radius:20px 20px 0 0; padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+    max-height:85vh; overflow-y:auto;
+  }
+  .sheet h3{ margin:0 0 14px; font-size:16px; }
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:11px; color:var(--ink-soft); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px; }
+  .field input, .field select{
+    width:100%; padding:10px; border:1.5px solid var(--rule-strong); border-radius:8px;
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px; background:var(--white);
+  }
+  .sheet .btn-row{ display:flex; gap:8px; margin-top:16px; }
+  .sheet .btn-row button{
+    flex:1; padding:12px; border-radius:10px; border:none; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .btn-save{ background:var(--ink); color:var(--white); }
+  .btn-delete{ background:var(--debit); color:var(--white); }
+  .btn-cancel{ background:var(--rule); color:var(--ink); }
+
+  .extrato-text{
+    width:100%; height:50vh; font-family:'IBM Plex Mono', monospace; font-size:12px;
+    border:1px solid var(--rule-strong); border-radius:8px; padding:10px; background:var(--white);
+    white-space:pre; overflow:auto;
+  }
 </style>
 </head>
 <body>
-
 <div id="ga-root">
+
   <div class="month-nav">
-    <button id="prevMonth" aria-label="Mês anterior">‹</button>
-    <span class="month-label" id="monthLabel">—</span>
-    <button id="nextMonth" aria-label="Próximo mês">›</button>
+    <button id="prevMonth">‹</button>
+    <div class="month-label" id="monthLabel">SETEMBRO 2026</div>
+    <button id="nextMonth">›</button>
   </div>
-  <div class="total-hero mono" id="totalHero">R$ 0,00</div>
+
+  <div class="total-hero">
+    <div class="amount" id="totalAmount">R$ 0,00</div>
+    <div class="sub" id="totalSub">gasto do mês</div>
+  </div>
 
   <div class="entry-box">
-    <div class="chip-row" id="categoryChips"></div>
-    <div class="payment-toggle" id="paymentToggle">
-      <button type="button" class="pay-btn active" data-pay="pix">Pix</button>
-      <button type="button" class="pay-btn" data-pay="debito">Débito</button>
-      <button type="button" class="pay-btn" data-pay="credito">Crédito</button>
+    <div class="chip-row" id="chipRow"></div>
+
+    <div class="toggle-row">
+      <div class="toggle-group" id="payToggle"></div>
     </div>
-    <input type="text" id="descInput" class="desc-box" placeholder="descrição (opcional)" autocomplete="off">
+    <div class="toggle-row" id="typeToggleWrap" style="display:none;">
+      <div class="toggle-group" id="typeToggle">
+        <div class="toggle-btn active-gasto" data-type="gasto">Gasto</div>
+        <div class="toggle-btn" data-type="ganho">Ganho</div>
+      </div>
+    </div>
+
+    <div class="desc-box">
+      <input type="text" id="descInput" placeholder="descrição (opcional)">
+    </div>
+
     <div class="amount-row">
-      <div class="amount-display mono" id="amountDisplay">R$ 0,00</div>
-      <button type="button" class="confirm-arrow" id="confirmBtn" aria-label="Adicionar">→</button>
+      <div class="amount-display" id="amountDisplay"><span class="fly-money">R$ 0,00</span></div>
+      <canvas id="fireCanvas"></canvas>
+      <button class="confirm-arrow" id="confirmBtn">→</button>
     </div>
-    <div class="keypad" id="keypad">
-      <button type="button" class="key" data-key="1">1</button>
-      <button type="button" class="key" data-key="2">2</button>
-      <button type="button" class="key" data-key="3">3</button>
-      <button type="button" class="key" data-key="4">4</button>
-      <button type="button" class="key" data-key="5">5</button>
-      <button type="button" class="key" data-key="6">6</button>
-      <button type="button" class="key" data-key="7">7</button>
-      <button type="button" class="key" data-key="8">8</button>
-      <button type="button" class="key" data-key="9">9</button>
-      <button type="button" class="key key-back" data-key="back">⌫</button>
-      <button type="button" class="key" data-key="0">0</button>
-      <button type="button" class="key" data-key=",">,</button>
-    </div>
-    <div class="quick-feedback" id="quickFeedback"></div>
+
+    <div class="keypad" id="keypad"></div>
   </div>
 
-  <button id="extratoBtn" type="button" style="display:block;margin:14px auto 0;background:none;border:none;color:var(--ink-soft);font-size:0.78rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">ver extrato do mês</button>
+  <div class="extrato-btn-wrap">
+    <button class="extrato-btn" id="extratoBtn">Ver extrato do mês</button>
+  </div>
 
-  <hr class="rule">
+  <div class="ledger" id="ledger"></div>
 
-  <div class="ledger" id="ledger"><div class="loading-state">Carregando…</div></div>
-
-  <hr class="rule">
-
-  <button class="toggle-details" id="toggleBackup" type="button" style="background:none;border:none;color:var(--ink-faint);font-size:0.78rem;padding:6px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">+ exportar / importar backup</button>
-  <div id="backupPanel" style="display:none;margin-top:10px;">
-    <div class="field"><label>Seus dados (pra guardar à parte ou levar pra outro aparelho)</label>
-      <textarea id="backupText" readonly rows="3" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;border:1px solid var(--rule-strong);border-radius:6px;padding:8px;background:var(--white);color:var(--ink-soft);width:100%;resize:vertical;"></textarea>
-      <button id="copyBackupBtn" type="button" style="margin-top:6px;background:var(--ink);color:var(--white);border:none;border-radius:6px;padding:7px 12px;font-size:0.78rem;cursor:pointer;align-self:flex-start;">Copiar</button>
-      <span id="copyFeedback" style="font-size:0.72rem;color:var(--ink-soft);margin-left:8px;"></span>
+  <div class="panel-toggle" id="panelToggle">backup / restaurar dados</div>
+  <div class="backup-panel" id="backupPanel">
+    <textarea id="backupOut" readonly placeholder="seu backup aparece aqui"></textarea>
+    <div class="row">
+      <button id="genBackupBtn">Gerar backup</button>
+      <button id="copyBackupBtn">Copiar</button>
     </div>
-    <div class="field"><label>Colar backup pra restaurar</label>
-      <textarea id="restoreText" rows="3" placeholder="cole aqui o texto salvo" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;border:1px solid var(--rule-strong);border-radius:6px;padding:8px;background:var(--white);color:var(--ink);width:100%;resize:vertical;"></textarea>
-      <button id="restoreBtn" type="button" style="margin-top:6px;background:var(--ink);color:var(--white);border:none;border-radius:6px;padding:7px 12px;font-size:0.78rem;cursor:pointer;align-self:flex-start;">Carregar backup</button>
-      <span id="restoreFeedback" style="font-size:0.72rem;color:var(--ink-soft);margin-left:8px;"></span>
+    <textarea id="restoreIn" placeholder="cole aqui o backup pra restaurar" style="margin-top:10px;"></textarea>
+    <div class="row">
+      <button id="restoreBtn">Restaurar</button>
     </div>
   </div>
 
-  <button class="footer-link" id="clearAllBtn" type="button">Limpar todos os dados</button>
+  <div class="clear-all-btn" id="clearAllBtn">apagar todos os dados</div>
+
 </div>
 
+<!-- Edit modal -->
 <div class="overlay" id="editOverlay">
-  <div class="modal-sheet">
-    <h3>Editar gasto</h3>
-    <div class="field-row">
-      <div class="field" style="flex:1"><label for="eValor">Valor (R$)</label><input type="number" id="eValor" step="0.01" min="0" inputmode="decimal"></div>
-      <div class="field" style="flex:1"><label for="eData">Data</label><input type="date" id="eData"></div>
+  <div class="sheet">
+    <h3>Editar lançamento</h3>
+    <div class="field"><label>Valor</label><input type="text" id="editValor"></div>
+    <div class="field"><label>Data</label><input type="date" id="editData"></div>
+    <div class="field"><label>Descrição</label><input type="text" id="editDesc"></div>
+    <div class="field"><label>Categoria</label><select id="editCategoria"></select></div>
+    <div class="field"><label>Pagamento</label><select id="editPagamento"></select></div>
+    <div class="field"><label>Tipo</label>
+      <select id="editTipo">
+        <option value="gasto">Gasto</option>
+        <option value="ganho">Ganho</option>
+      </select>
     </div>
-    <div class="field"><label for="eDescricao">Descrição</label><input type="text" id="eDescricao"></div>
-    <div class="field-row">
-      <div class="field" style="flex:1"><label for="eCategoria">Categoria</label><select id="eCategoria"></select></div>
-      <div class="field" style="flex:1"><label for="ePagamento">Pagamento</label><select id="ePagamento"></select></div>
-    </div>
-    <div class="modal-actions">
-      <button class="delete-btn" id="eDeleteBtn" type="button">Excluir</button>
-      <div class="right-actions">
-        <button class="cancel" id="eCancelBtn" type="button">Cancelar</button>
-        <button class="save" id="eSaveBtn" type="button">Salvar</button>
-      </div>
+    <div class="btn-row">
+      <button class="btn-delete" id="editDeleteBtn">Excluir</button>
+      <button class="btn-cancel" id="editCancelBtn">Cancelar</button>
+      <button class="btn-save" id="editSaveBtn">Salvar</button>
     </div>
   </div>
 </div>
 
+<!-- Clear confirm modal -->
 <div class="overlay" id="clearOverlay">
-  <div class="modal-sheet">
-    <h3>Limpar todos os dados</h3>
-    <p class="confirm-text">Isso apaga permanentemente todos os gastos salvos neste aparelho. Não dá pra desfazer.</p>
-    <div class="modal-actions">
-      <span></span>
-      <div class="right-actions">
-        <button class="cancel" id="cCancelBtn" type="button">Cancelar</button>
-        <button class="save" id="cConfirmBtn" type="button" style="background: var(--debit);">Apagar tudo</button>
-      </div>
+  <div class="sheet">
+    <h3>Apagar tudo?</h3>
+    <p style="font-size:13px;color:var(--ink-soft)">Isso vai remover todos os lançamentos salvos neste dispositivo. Não tem como desfazer.</p>
+    <div class="btn-row">
+      <button class="btn-cancel" id="clearCancelBtn">Cancelar</button>
+      <button class="btn-delete" id="clearConfirmBtn">Apagar tudo</button>
     </div>
   </div>
 </div>
 
+<!-- Extrato modal -->
 <div class="overlay" id="extratoOverlay">
-  <div class="modal-sheet">
-    <h3 id="extratoTitle">Extrato do mês</h3>
-    <textarea id="extratoText" readonly rows="12" style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;line-height:1.5;border:1px solid var(--rule-strong);border-radius:6px;padding:10px;background:var(--white);color:var(--ink);width:100%;resize:vertical;white-space:pre;"></textarea>
-    <div class="modal-actions">
-      <span id="extratoCopyFeedback" style="font-size:0.75rem;color:var(--ink-soft);"></span>
-      <div class="right-actions">
-        <button class="cancel" id="extratoCloseBtn" type="button">Fechar</button>
-        <button class="save" id="extratoCopyBtn" type="button">Copiar</button>
-      </div>
+  <div class="sheet">
+    <h3 id="extratoTitle">Extrato</h3>
+    <textarea class="extrato-text" id="extratoText" readonly></textarea>
+    <div class="btn-row">
+      <button class="btn-cancel" id="extratoCloseBtn">Fechar</button>
+      <button class="btn-save" id="extratoCopyBtn">Copiar</button>
     </div>
   </div>
 </div>
 
 <script>
-(function () {
-  const CATEGORIES = [
-    { id: 'cachaca', label: 'Cachaça & Cia', keywords: ['cachaca','cerveja','bebida','birita','chopp','vodka','whisky','drink','boteco','tira gosto','tiragosto','churrasco','churrasquinho','petisco','bar'] },
-    { id: 'hydro', label: 'Café Hydro', keywords: ['hydro','cafe hydro','cafe'] },
-    { id: 'mercado', label: 'Mercado', keywords: ['mercado','supermercado','feira','hortifruti','acougue','padaria','hortifruti'] },
-    { id: 'delivery', label: 'Comida Fora', keywords: ['restaurante','lanchonete','ifood','delivery','lanche','hamburgueria','pizza','pizzaria','rappi'] },
-    { id: 'apostas', label: 'Bets', keywords: ['aposta','bet','loteria','jogo do bicho','rifa'] },
-    { id: 'lavanderia', label: 'Lavanderia', keywords: ['lavanderia','lavagem de roupa','tinturaria'] },
-    { id: 'gata', label: 'Gata Vaidosa', keywords: ['depilacao','cabelo','salao','unha','manicure','pedicure','estetica','sobrancelha','maquiagem'] },
-    { id: 'coleta', label: 'Coletas', keywords: ['coleta'] },
-    { id: 'saude', label: 'Saúde', keywords: ['farmacia','remedio','medico','consulta','dentista','plano de saude','academia'] },
-    { id: 'outros', label: 'Outros', keywords: [] }
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = 'gastos_diarios_v1';
+
+  var CATEGORIES = [
+    { id:'cachaca',    label:'Cachaça & Cia', keywords:['cachaca','cerveja','bebida','bar ','churrasquinho','tira gosto','petisco'] },
+    { id:'mercado',    label:'Mercado',       keywords:['mercado','supermercado','padaria','acougue','hortifruti'] },
+    { id:'comidafora', label:'Comida Fora',   keywords:['ifood','restaurante','lanchonete','delivery','quintalcorten','lanche','pizza'] },
+    { id:'bets',       label:'Bets',          keywords:['bet','aposta','hs do brasil'] },
+    { id:'lavanderia', label:'Lavanderia',    keywords:['lavanderia','lavagem','lava jato'] },
+    { id:'gata',       label:'Gata Vaidosa',  keywords:['salao','unha','cabelo','depila','manicure','estetica'] },
+    { id:'coletas',    label:'Coletas',       keywords:['coleta'] },
+    { id:'saude',      label:'Saúde',         keywords:['farmacia','remedio','medico','saude','drogaria'] },
+    { id:'hydro',      label:'Café Hydro',    keywords:['hydro','elasa','cafe hydro'] },
+    { id:'outros',     label:'Outros',        keywords:[] }
   ];
-  const CAT_COLOR = { cachaca: 'var(--c-cachaca)', hydro: 'var(--c-hydro)', mercado: 'var(--c-mercado)', delivery: 'var(--c-delivery)', apostas: 'var(--c-apostas)', lavanderia: 'var(--c-lavanderia)', gata: 'var(--c-gata)', coleta: 'var(--c-coleta)', saude: 'var(--c-saude)', outros: 'var(--c-outros)' };
-  const PAYMENT_TYPES = [
-    { id: 'pix', label: 'Pix' },
-    { id: 'debito', label: 'Débito' },
-    { id: 'credito', label: 'Crédito' }
+
+  var CAT_COLOR = {
+    cachaca:'var(--cat-cachaca)', mercado:'var(--cat-mercado)', comidafora:'var(--cat-comidafora)',
+    bets:'var(--cat-bets)', lavanderia:'var(--cat-lavanderia)', gata:'var(--cat-gata)',
+    coletas:'var(--cat-coletas)', saude:'var(--cat-saude)', hydro:'var(--cat-hydro)', outros:'var(--cat-outros)'
+  };
+
+  var PAYMENT_TYPES = [
+    { id:'pix', label:'Pix' },
+    { id:'debito', label:'Débito' },
+    { id:'credito', label:'Crédito' }
   ];
-  const STORAGE_KEY = 'gastos_diarios_v1';
 
-  let expenses = [];
-  let viewDate = new Date(); viewDate.setDate(1);
-  let currentPayment = 'pix';
+  var MONTHS_PT = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
 
-  const $ = (id) => document.getElementById(id);
+  // ---------- state ----------
+  var expenses = [];
+  var viewDate = new Date();
+  var currentPayment = 'pix';
+  var currentType = 'gasto';
+  var digitBuffer = '0';
+  var selectedCategory = null;
+  var categoryManuallySet = false;
 
-  function normalize(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
-  function classify(desc) {
-    const n = normalize(desc);
-    for (const cat of CATEGORIES) { if (cat.id === 'outros') continue; if (cat.keywords.some(k => n.includes(k))) return cat.id; }
-    return 'outros';
+  // ---------- helpers ----------
+  function normalize(s){
+    return (s||'').toString().toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'');
   }
-  function catLabel(id) { const c = CATEGORIES.find(c => c.id === id); return c ? c.label : 'Outros'; }
-  function paymentLabel(id) { const p = PAYMENT_TYPES.find(p => p.id === id); return p ? p.label : 'Pix'; }
-  function extractPayment(desc) {
-    const m = desc.match(/\b(pix|d[ée]bito|cr[ée]dito)\b/i);
-    if (!m) return { payment: null, desc };
-    const word = normalize(m[1]);
-    const type = word.indexOf('cred') !== -1 ? 'credito' : (word.indexOf('deb') !== -1 ? 'debito' : 'pix');
-    const cleaned = (desc.slice(0, m.index) + desc.slice(m.index + m[0].length)).trim().replace(/^[\s,.-]+|[\s,.-]+$/g, '');
-    return { payment: type, desc: cleaned };
-  }
-  function formatBRL(n) { return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-  function parseISODate(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
-  function todayISO() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-  function uid() { return (crypto.randomUUID ? crypto.randomUUID() : 'e' + Date.now() + Math.random().toString(16).slice(2)); }
-  function monthKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
-
-  function populateCategorySelect(sel) {
-    sel.innerHTML = '';
-    CATEGORIES.forEach(c => { const opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.label; sel.appendChild(opt); });
-  }
-  populateCategorySelect($('eCategoria'));
-  function populatePaymentSelect(sel) {
-    sel.innerHTML = '';
-    PAYMENT_TYPES.forEach(p => { const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.label; sel.appendChild(opt); });
-  }
-  populatePaymentSelect($('ePagamento'));
-
-  document.querySelectorAll('#paymentToggle .pay-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentPayment = btn.dataset.pay;
-      document.querySelectorAll('#paymentToggle .pay-btn').forEach(b => b.classList.toggle('active', b === btn));
-    });
-  });
-
-  // ---- teclado numérico (sem precisar do teclado do telefone) ----
-  let digitBuffer = '';
-  let selectedCategory = 'outros';
-  let categoryManuallySet = false;
-
-  function bufferToAmount() { return parseFloat((digitBuffer || '0').replace(',', '.')) || 0; }
-  function updateAmountDisplay() { $('amountDisplay').textContent = digitBuffer ? ('R$ ' + digitBuffer) : 'R$ 0,00'; }
-
-  function renderCategoryChips() {
-    const box = $('categoryChips');
-    box.innerHTML = '';
-    CATEGORIES.forEach(c => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      const active = c.id === selectedCategory;
-      btn.className = 'chip' + (active ? ' active' : '');
-      btn.textContent = c.label;
-      if (active) btn.style.background = CAT_COLOR[c.id];
-      btn.addEventListener('click', () => {
-        selectedCategory = c.id;
-        categoryManuallySet = true;
-        renderCategoryChips();
-      });
-      box.appendChild(btn);
-    });
-  }
-  renderCategoryChips();
-  updateAmountDisplay();
-
-  $('descInput').addEventListener('input', (e) => {
-    if (categoryManuallySet) return;
-    const val = e.target.value.trim();
-    if (!val) return;
-    const guess = classify(val);
-    if (guess !== selectedCategory) { selectedCategory = guess; renderCategoryChips(); }
-  });
-
-  function buildFireMask(text, W, canvasH, baseY, dpr) {
-    const maskCanvas = document.createElement('canvas');
-    maskCanvas.width = W * dpr; maskCanvas.height = canvasH * dpr;
-    const mctx = maskCanvas.getContext('2d');
-    mctx.scale(dpr, dpr);
-    mctx.font = "600 33px 'IBM Plex Mono', monospace";
-    const totalWidth = mctx.measureText(text).width;
-    const startX = (W - totalWidth) / 2;
-    const charWidth = totalWidth / text.length;
-    const flameSize = Math.max(14, Math.min(30, charWidth * 1.55));
-    mctx.textAlign = 'center';
-    mctx.textBaseline = 'middle';
-    mctx.font = flameSize + 'px sans-serif';
-    for (let i = 0; i < text.length; i++) {
-      if (text[i] === ' ') continue;
-      const cx = startX + i * charWidth + charWidth / 2;
-      mctx.fillText('🔥', cx, baseY);
-    }
-    const data = mctx.getImageData(0, 0, W * dpr, canvasH * dpr).data;
-    const pts = [];
-    const wpx = W * dpr;
-    for (let y = 0; y < canvasH * dpr; y++) {
-      for (let x = 0; x < wpx; x++) {
-        if (data[(y * wpx + x) * 4 + 3] > 100) pts.push({ x: x / dpr, y: y / dpr });
+  function classify(desc){
+    var n = normalize(desc);
+    if(!n) return null;
+    for(var i=0;i<CATEGORIES.length;i++){
+      var c = CATEGORIES[i];
+      for(var j=0;j<c.keywords.length;j++){
+        if(n.indexOf(c.keywords[j]) !== -1) return c.id;
       }
     }
-    return pts;
+    return null;
   }
-  function fireColorForLife(t) {
-    if (t < 0.3) { const k = t / 0.3; return `rgba(255,${Math.round(250 - 40 * k)},${Math.round(180 - 140 * k)},1)`; }
-    if (t < 0.7) { const k = (t - 0.3) / 0.4; return `rgba(255,${Math.round(150 - 70 * k)},${Math.round(30 - 25 * k)},${1 - 0.15 * k})`; }
-    const k = (t - 0.7) / 0.3; return `rgba(${Math.round(210 - 130 * k)},${Math.round(50 - 35 * k)},${Math.round(10 - 8 * k)},${0.85 * (1 - k)})`;
+  function catLabel(id){
+    for(var i=0;i<CATEGORIES.length;i++) if(CATEGORIES[i].id===id) return CATEGORIES[i].label;
+    return id;
   }
-  function playFireAnimation(amountEl, text, onDone) {
-    const dpr = window.devicePixelRatio || 1;
-    const W = amountEl.clientWidth, H = amountEl.clientHeight;
-    const EXTRA = 150;
-    const canvasH = H + EXTRA;
-    const baseY = EXTRA + H / 2 + 2;
-    amountEl.innerHTML = '<canvas class="fire-canvas"></canvas>';
-    const canvas = amountEl.querySelector('.fire-canvas');
-    canvas.width = W * dpr; canvas.height = canvasH * dpr;
-    canvas.style.width = W + 'px'; canvas.style.height = canvasH + 'px';
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    const maskPoints = buildFireMask(text, W, canvasH, baseY, dpr);
-    let particles = [], smoke = [];
-    let startTime = 0;
-    const BURST = 850, TAPER = 500, TOTAL = 1700;
-    function spawnParticle() {
-      const p = maskPoints[(Math.random() * maskPoints.length) | 0];
-      if (!p) return;
-      particles.push({ x: p.x + (Math.random() - 0.5) * 2, y: p.y + (Math.random() - 0.5) * 2,
-        vx: (Math.random() - 0.5) * 0.7, vy: -(0.7 + Math.random() * 1.1),
-        life: 0, maxLife: 26 + Math.random() * 22, size: 5 + Math.random() * 5 });
-    }
-    function spawnSmoke() {
-      const p = maskPoints[(Math.random() * maskPoints.length) | 0];
-      if (!p) return;
-      smoke.push({ x: p.x, y: p.y - 8, vx: (Math.random() - 0.5) * 0.6, vy: -(0.35 + Math.random() * 0.55),
-        life: 0, maxLife: 90 + Math.random() * 50, size: 9 + Math.random() * 9 });
-    }
-    function frame(now) {
-      if (!startTime) startTime = now;
-      const elapsed = now - startTime;
-      ctx.clearRect(0, 0, W, canvasH);
-      let spawnCount = 0;
-      if (elapsed < BURST) spawnCount = 4;
-      else if (elapsed < BURST + TAPER) spawnCount = Math.round(4 * (1 - (elapsed - BURST) / TAPER));
-      for (let i = 0; i < spawnCount; i++) spawnParticle();
-      if (elapsed > 200 && elapsed < BURST + TAPER + 700) {
-        if (Math.random() < 0.85) spawnSmoke();
-        if (Math.random() < 0.4) spawnSmoke();
-      }
-      particles.forEach(p => { p.life++; p.x += p.vx; p.y += p.vy; p.vy -= 0.012; });
-      particles = particles.filter(p => p.life < p.maxLife);
-      smoke.forEach(p => { p.life++; p.x += p.vx; p.y += p.vy; });
-      smoke = smoke.filter(p => p.life < p.maxLife);
-      smoke.forEach(p => {
-        const t = p.life / p.maxLife; const r = p.size * (1 + t * 1.9);
-        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-        grad.addColorStop(0, `rgba(60,60,56,${0.42 * (1 - t)})`);
-        grad.addColorStop(1, 'rgba(60,60,56,0)');
-        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
-      });
-      particles.forEach(p => {
-        const t = p.life / p.maxLife; const r = p.size * (1 - t * 0.55);
-        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-        grad.addColorStop(0, fireColorForLife(t));
-        grad.addColorStop(1, 'rgba(255,0,0,0)');
-        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
-      });
-      if (elapsed < TOTAL || particles.length > 0 || smoke.length > 0) {
-        requestAnimationFrame(frame);
-      } else {
-        onDone();
-      }
-    }
-    requestAnimationFrame(frame);
+  function paymentLabel(id){
+    for(var i=0;i<PAYMENT_TYPES.length;i++) if(PAYMENT_TYPES[i].id===id) return PAYMENT_TYPES[i].label;
+    return id;
+  }
+  function formatBRL(n){
+    var neg = n < 0;
+    n = Math.abs(n);
+    var s = n.toFixed(2).replace('.', ',');
+    var parts = s.split(',');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return (neg?'-':'') + 'R$ ' + parts.join(',');
+  }
+  function parseISODate(iso){
+    var p = iso.split('-');
+    return new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+  }
+  function todayISO(){
+    var d = new Date();
+    var m = (d.getMonth()+1).toString().padStart(2,'0');
+    var day = d.getDate().toString().padStart(2,'0');
+    return d.getFullYear()+'-'+m+'-'+day;
+  }
+  function uid(){
+    return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+  }
+  function monthKey(d){
+    return d.getFullYear() + '-' + (d.getMonth()+1);
+  }
+  function fmtDateShort(iso){
+    var d = parseISODate(iso);
+    return d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0');
   }
 
-  function confirmEntry() {
-    const amount = bufferToAmount();
-    const fb = $('quickFeedback');
-    if (!amount || amount <= 0) {
-      fb.textContent = 'Digite um valor primeiro.';
-      fb.className = 'quick-feedback error show';
-      setTimeout(() => { fb.className = 'quick-feedback'; }, 2000);
-      return;
-    }
-    const description = $('descInput').value.trim();
-    const category = selectedCategory;
-    const paymentType = currentPayment;
-    const entry = { id: uid(), date: todayISO(), amount, category, paymentType, description: description || catLabel(category), createdAt: Date.now() };
-    expenses.push(entry);
-    saveExpenses();
-    viewDate = new Date(); viewDate.setDate(1);
-    render();
-    const amountEl = $('amountDisplay');
-    const burnedText = formatBRL(amount);
-    digitBuffer = '';
-    $('descInput').value = '';
-    categoryManuallySet = false;
-    fb.textContent = `Lançado em ${catLabel(category)} · ${paymentLabel(paymentType)}.`;
-    fb.className = 'quick-feedback show';
-    playFireAnimation(amountEl, burnedText, () => { updateAmountDisplay(); });
-    setTimeout(() => { fb.className = 'quick-feedback'; }, 2200);
-  }
-
-  document.querySelectorAll('#keypad .key').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.key;
-      if (key === 'back') {
-        digitBuffer = digitBuffer.slice(0, -1);
-      } else if (key === ',') {
-        if (digitBuffer === '') digitBuffer = '0,';
-        else if (!digitBuffer.includes(',')) digitBuffer += ',';
-      } else {
-        if (digitBuffer.includes(',')) {
-          const decimals = digitBuffer.split(',')[1] || '';
-          if (decimals.length >= 2) return;
-        } else if (digitBuffer.replace(',', '').length >= 7) {
-          return;
-        }
-        digitBuffer += key;
-      }
-      updateAmountDisplay();
-    });
-  });
-
-  $('confirmBtn').addEventListener('click', confirmEntry);
-
-  // ---- persistência real via localStorage (funciona porque aqui fora do Claude não tem o sandbox que bloqueava) ----
-  function loadExpenses() {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+  // ---------- storage ----------
+  function loadExpenses(){
+    try{
+      var raw = window.localStorage.getItem(STORAGE_KEY);
       expenses = raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      console.error('Erro ao carregar dados salvos:', e);
+      if(!Array.isArray(expenses)) expenses = [];
+    }catch(e){
       expenses = [];
     }
-    render();
   }
-  function saveExpenses() {
-    try {
+  function saveExpenses(){
+    try{
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
-    } catch (e) {
-      console.error('Erro ao salvar:', e);
+    }catch(e){
+      alert('Não foi possível salvar. Espaço de armazenamento pode estar cheio.');
     }
-    updateBackupText();
-  }
-  function updateBackupText() {
-    const el = $('backupText');
-    if (el) el.value = JSON.stringify(expenses);
   }
 
-  function entriesForViewMonth() {
-    const key = monthKey(viewDate);
-    return expenses.filter(e => e.date.slice(0, 7) === key).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+  // ---------- render: chips / payment toggle ----------
+  var chipRow = document.getElementById('chipRow');
+  var payToggle = document.getElementById('payToggle');
+  var typeToggle = document.getElementById('typeToggle');
+  var typeToggleWrap = document.getElementById('typeToggleWrap');
+
+  function resetTypeToggleUI(){
+    currentType = 'gasto';
+    Array.prototype.forEach.call(typeToggle.children, function(b){
+      b.classList.remove('active-gasto','active-ganho');
+    });
+    typeToggle.children[0].classList.add('active-gasto');
   }
 
-  function render() {
-    $('monthLabel').textContent = viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    const monthEntries = entriesForViewMonth();
-    const total = monthEntries.reduce((s, e) => s + e.amount, 0);
-    $('totalHero').textContent = formatBRL(total);
-    renderLedger(monthEntries);
+  function updateTypeToggleVisibility(){
+    if(selectedCategory === 'bets'){
+      typeToggleWrap.style.display = 'flex';
+    } else {
+      typeToggleWrap.style.display = 'none';
+      resetTypeToggleUI();
+    }
   }
 
-  function renderLedger(monthEntries) {
-    const ledger = $('ledger');
-    ledger.innerHTML = '';
-    if (monthEntries.length === 0) {
-      ledger.innerHTML = '<div class="empty-state">Nada lançado neste mês ainda.<br>Digite acima pra começar — tipo "12 cafezinho".</div>';
+  function renderChips(){
+    chipRow.innerHTML = '';
+    CATEGORIES.forEach(function(c){
+      var el = document.createElement('div');
+      el.className = 'chip' + (selectedCategory===c.id ? ' active' : '');
+      el.textContent = c.label;
+      if(selectedCategory===c.id){
+        el.style.background = CAT_COLOR[c.id];
+      }
+      el.addEventListener('click', function(){
+        selectedCategory = c.id;
+        categoryManuallySet = true;
+        renderChips();
+        updateTypeToggleVisibility();
+      });
+      chipRow.appendChild(el);
+    });
+    updateTypeToggleVisibility();
+  }
+
+  function renderPayToggle(){
+    payToggle.innerHTML = '';
+    PAYMENT_TYPES.forEach(function(p){
+      var el = document.createElement('div');
+      el.className = 'toggle-btn' + (currentPayment===p.id ? ' active-pay' : '');
+      el.textContent = p.label;
+      el.addEventListener('click', function(){
+        currentPayment = p.id;
+        renderPayToggle();
+      });
+      payToggle.appendChild(el);
+    });
+  }
+
+  Array.prototype.forEach.call(typeToggle.children, function(el){
+    el.addEventListener('click', function(){
+      currentType = el.getAttribute('data-type');
+      Array.prototype.forEach.call(typeToggle.children, function(b){
+        b.classList.remove('active-gasto','active-ganho');
+      });
+      el.classList.add(currentType==='gasto' ? 'active-gasto' : 'active-ganho');
+    });
+  });
+
+  // ---------- description auto-suggest ----------
+  var descInput = document.getElementById('descInput');
+  descInput.addEventListener('input', function(){
+    if(categoryManuallySet) return;
+    var guess = classify(descInput.value);
+    if(guess){
+      selectedCategory = guess;
+      renderChips();
+      updateTypeToggleVisibility();
+    }
+  });
+
+  // ---------- amount / keypad ----------
+  var amountDisplay = document.getElementById('amountDisplay');
+  var keypad = document.getElementById('keypad');
+  var KEY_LAYOUT = ['1','2','3','4','5','6','7','8','9',',','0','back'];
+
+  function bufferToAmount(){
+    var norm = digitBuffer.replace(',', '.');
+    var v = parseFloat(norm);
+    if(isNaN(v)) v = 0;
+    return v;
+  }
+  function updateAmountDisplay(){
+    var span = amountDisplay.querySelector('.fly-money');
+    var v = bufferToAmount();
+    span.textContent = formatBRL(v);
+  }
+  function resetBuffer(){
+    digitBuffer = '0';
+    updateAmountDisplay();
+  }
+
+  function renderKeypad(){
+    keypad.innerHTML = '';
+    KEY_LAYOUT.forEach(function(k){
+      var el = document.createElement('div');
+      if(k === 'back'){
+        el.className = 'key back';
+        el.textContent = '⌫';
+        el.addEventListener('click', function(){
+          if(digitBuffer.length > 1){
+            digitBuffer = digitBuffer.slice(0,-1);
+          } else {
+            digitBuffer = '0';
+          }
+          updateAmountDisplay();
+        });
+      } else if(k === ','){
+        el.className = 'key';
+        el.textContent = ',';
+        el.addEventListener('click', function(){
+          if(digitBuffer.indexOf(',') === -1){
+            digitBuffer += ',';
+            updateAmountDisplay();
+          }
+        });
+      } else {
+        el.className = 'key';
+        el.textContent = k;
+        el.addEventListener('click', function(){
+          if(digitBuffer === '0'){
+            digitBuffer = k;
+          } else {
+            // limit decimals to 2 digits after comma
+            var commaIdx = digitBuffer.indexOf(',');
+            if(commaIdx !== -1 && digitBuffer.length - commaIdx > 2) return;
+            digitBuffer += k;
+          }
+          updateAmountDisplay();
+        });
+      }
+      keypad.appendChild(el);
+    });
+  }
+
+  // ---------- fire + smoke animation ----------
+  var fireCanvas = document.getElementById('fireCanvas');
+  var fireCtx = fireCanvas.getContext('2d');
+  var fireRAF = null;
+
+  function buildFireMask(text){
+    // returns array of {x,y} lit pixel offsets per character, relative to that char's box
+    var chars = text.split('');
+    var results = [];
+    var tmp = document.createElement('canvas');
+    var size = 40;
+    tmp.width = size; tmp.height = size;
+    var tctx = tmp.getContext('2d');
+    chars.forEach(function(ch){
+      tctx.clearRect(0,0,size,size);
+      tctx.fillStyle = '#fff';
+      tctx.font = 'bold 26px "IBM Plex Mono", monospace';
+      tctx.textBaseline = 'middle';
+      tctx.textAlign = 'center';
+      tctx.fillText(ch, size/2, size/2+2);
+      var data = tctx.getImageData(0,0,size,size).data;
+      var pts = [];
+      for(var y=0;y<size;y+=2){
+        for(var x=0;x<size;x+=2){
+          var idx = (y*size+x)*4;
+          if(data[idx+3] > 100){
+            pts.push({x:x-size/2, y:y-size/2});
+          }
+        }
+      }
+      results.push(pts.length ? pts : [{x:0,y:0}]);
+    });
+    return results;
+  }
+
+  function fireColorForLife(t){
+    // t: 0 (born) -> 1 (dead)
+    if(t < 0.25){
+      return 'rgba(255,255,210,' + (1-t*0.3) + ')';
+    } else if(t < 0.55){
+      return 'rgba(255,170,40,' + (0.95-t*0.3) + ')';
+    } else if(t < 0.8){
+      return 'rgba(220,70,30,' + (0.7-t*0.4) + ')';
+    } else {
+      var a = Math.max(0,(1-t)*1.2);
+      return 'rgba(90,90,90,' + (a*0.35) + ')';
+    }
+  }
+
+  function playFireAnimation(text, onDone){
+    var rect = amountDisplay.getBoundingClientRect();
+    var parentRect = amountDisplay.parentElement.getBoundingClientRect();
+    var extraH = 150;
+    fireCanvas.width = rect.width * devicePixelRatio;
+    fireCanvas.height = (rect.height + extraH) * devicePixelRatio;
+    fireCanvas.style.width = rect.width + 'px';
+    fireCanvas.style.height = (rect.height + extraH) + 'px';
+    fireCanvas.style.left = (rect.left - parentRect.left) + 'px';
+    fireCanvas.style.top = (rect.top - parentRect.top - extraH) + 'px';
+    fireCanvas.style.display = 'block';
+    fireCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+
+    var masks = buildFireMask(text);
+    var charW = rect.width / text.length;
+    var particles = [];
+    var baseY = extraH + rect.height*0.5;
+
+    masks.forEach(function(pts, i){
+      var cx = charW*i + charW/2;
+      var count = 10;
+      for(var n=0;n<count;n++){
+        var p = pts[Math.floor(Math.random()*pts.length)];
+        particles.push({
+          x: cx + p.x*0.5,
+          y: baseY + p.y*0.5,
+          vx: (Math.random()-0.5)*0.4,
+          vy: -1 - Math.random()*1.6,
+          size: 3 + Math.random()*4,
+          life: 0,
+          maxLife: 40 + Math.random()*40,
+          delay: Math.random()*15
+        });
+      }
+    });
+
+    var start = null;
+    function frame(ts){
+      if(!start) start = ts;
+      fireCtx.clearRect(0,0,fireCanvas.width, fireCanvas.height);
+      var alive = false;
+      particles.forEach(function(p){
+        if(p.delay > 0){ p.delay--; alive = true; return; }
+        p.life++;
+        if(p.life > p.maxLife) return;
+        alive = true;
+        var t = p.life / p.maxLife;
+        p.x += p.vx;
+        p.y += p.vy * (1 - t*0.3);
+        p.vy -= 0.01;
+        var col = fireColorForLife(t);
+        var sz = p.size * (1 - t*0.4) + t*3;
+        fireCtx.beginPath();
+        fireCtx.fillStyle = col;
+        fireCtx.arc(p.x, p.y, Math.max(0.5,sz), 0, Math.PI*2);
+        fireCtx.fill();
+      });
+      if(alive){
+        fireRAF = requestAnimationFrame(frame);
+      } else {
+        fireCanvas.style.display = 'none';
+        fireCtx.clearRect(0,0,fireCanvas.width, fireCanvas.height);
+        if(onDone) onDone();
+      }
+    }
+    fireRAF = requestAnimationFrame(frame);
+  }
+
+  // ---------- confirm entry ----------
+  var confirmBtn = document.getElementById('confirmBtn');
+  confirmBtn.addEventListener('click', function(){
+    var amount = bufferToAmount();
+    if(amount <= 0){
+      amountDisplay.style.animation = 'none';
       return;
     }
-    monthEntries.forEach(e => {
-      const row = document.createElement('div');
-      row.className = 'entry-row';
-      const dateLabel = parseISODate(e.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      row.innerHTML = `
-        <div class="entry-top">
-          <span class="entry-date">${dateLabel}</span>
-          <span class="entry-amt mono">${formatBRL(e.amount)}</span>
-        </div>
-        <div class="entry-desc">${escapeHtml(e.description || catLabel(e.category))}</div>
-        <div class="entry-tags">
-          <span class="tag tag-cat" style="background:${CAT_COLOR[e.category]}">${catLabel(e.category)}</span>
-          <span class="tag tag-pay">${paymentLabel(e.paymentType)}</span>
-        </div>
-      `;
-      row.addEventListener('click', () => openEditModal(e.id));
+    var cat = selectedCategory || classify(descInput.value) || 'outros';
+    var entry = {
+      id: uid(),
+      data: todayISO(),
+      valor: amount,
+      descricao: descInput.value.trim(),
+      categoria: cat,
+      pagamento: currentPayment,
+      isGain: currentType === 'ganho'
+    };
+    expenses.push(entry);
+    saveExpenses();
+
+    var text = formatBRL(amount).replace('R$ ','');
+    playFireAnimation(text, function(){});
+    amountDisplay.classList.add('success');
+    setTimeout(function(){
+      amountDisplay.classList.remove('success');
+    }, 1000);
+
+    descInput.value = '';
+    selectedCategory = null;
+    categoryManuallySet = false;
+    resetBuffer();
+    renderChips();
+    render();
+  });
+
+  // ---------- month nav ----------
+  var monthLabel = document.getElementById('monthLabel');
+  document.getElementById('prevMonth').addEventListener('click', function(){
+    viewDate.setMonth(viewDate.getMonth()-1);
+    render();
+  });
+  document.getElementById('nextMonth').addEventListener('click', function(){
+    viewDate.setMonth(viewDate.getMonth()+1);
+    render();
+  });
+
+  function monthExpenses(){
+    var key = monthKey(viewDate);
+    return expenses.filter(function(e){
+      return monthKey(parseISODate(e.data)) === key;
+    });
+  }
+
+  // ---------- ledger + totals ----------
+  var totalAmount = document.getElementById('totalAmount');
+  var totalSub = document.getElementById('totalSub');
+  var ledger = document.getElementById('ledger');
+
+  function render(){
+    monthLabel.textContent = MONTHS_PT[viewDate.getMonth()] + ' ' + viewDate.getFullYear();
+    var list = monthExpenses();
+
+    var net = 0;
+    list.forEach(function(e){ net += e.isGain ? -e.valor : e.valor; });
+
+    if(net >= 0){
+      totalAmount.textContent = formatBRL(net);
+      totalAmount.classList.remove('lucro');
+      totalSub.textContent = 'gasto do mês';
+    } else {
+      totalAmount.textContent = formatBRL(Math.abs(net));
+      totalAmount.classList.add('lucro');
+      totalSub.textContent = 'lucro do mês';
+    }
+
+    renderLedger(list);
+  }
+
+  function renderLedger(list){
+    ledger.innerHTML = '';
+    if(!list.length){
+      var empty = document.createElement('div');
+      empty.className = 'ledger-empty';
+      empty.textContent = 'nenhum lançamento neste mês';
+      ledger.appendChild(empty);
+      return;
+    }
+    var sorted = list.slice().sort(function(a,b){
+      if(a.data !== b.data) return a.data < b.data ? 1 : -1;
+      return 0;
+    });
+    sorted.forEach(function(e){
+      var row = document.createElement('div');
+      row.className = 'ledger-row';
+      var sign = e.isGain ? '+ ' : '';
+      row.innerHTML =
+        '<div class="left">' +
+          '<div class="top-line"><span class="date">'+fmtDateShort(e.data)+'</span>' +
+          '<span class="val'+(e.isGain?' ganho':'')+'">'+sign+formatBRL(e.valor)+'</span></div>' +
+          (e.descricao ? '<div class="desc">'+escapeHtml(e.descricao)+'</div>' : '') +
+          '<div class="tags">' +
+            '<span class="tag" style="background:'+CAT_COLOR[e.categoria]+'">'+catLabel(e.categoria)+'</span>' +
+            '<span class="tag pay">'+paymentLabel(e.pagamento)+'</span>' +
+            (e.isGain ? '<span class="tag ganho-tag">Ganho</span>' : '') +
+          '</div>' +
+        '</div>';
+      row.addEventListener('click', function(){ openEdit(e.id); });
       ledger.appendChild(row);
     });
   }
 
-  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-  $('prevMonth').addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() - 1); render(); });
-  $('nextMonth').addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() + 1); render(); });
-
-  let editingId = null;
-  function openEditModal(id) {
-    const e = expenses.find(x => x.id === id);
-    if (!e) return;
-    editingId = id;
-    $('eValor').value = e.amount;
-    $('eData').value = e.date;
-    $('eDescricao').value = e.description;
-    $('eCategoria').value = e.category;
-    $('ePagamento').value = e.paymentType || 'pix';
-    $('editOverlay').classList.add('open');
+  function escapeHtml(s){
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
   }
-  $('eCancelBtn').addEventListener('click', () => { $('editOverlay').classList.remove('open'); editingId = null; });
-  $('eSaveBtn').addEventListener('click', () => {
-    const e = expenses.find(x => x.id === editingId);
-    if (!e) return;
-    const valor = parseFloat($('eValor').value);
-    if (!valor || valor <= 0) { $('eValor').focus(); return; }
-    e.amount = valor; e.date = $('eData').value || e.date;
-    e.description = $('eDescricao').value.trim() || catLabel($('eCategoria').value);
-    e.category = $('eCategoria').value;
-    e.paymentType = $('ePagamento').value;
+
+  // ---------- edit modal ----------
+  var editOverlay = document.getElementById('editOverlay');
+  var editValor = document.getElementById('editValor');
+  var editData = document.getElementById('editData');
+  var editDesc = document.getElementById('editDesc');
+  var editCategoria = document.getElementById('editCategoria');
+  var editPagamento = document.getElementById('editPagamento');
+  var editTipo = document.getElementById('editTipo');
+  var editingId = null;
+
+  CATEGORIES.forEach(function(c){
+    var o = document.createElement('option');
+    o.value = c.id; o.textContent = c.label;
+    editCategoria.appendChild(o);
+  });
+  PAYMENT_TYPES.forEach(function(p){
+    var o = document.createElement('option');
+    o.value = p.id; o.textContent = p.label;
+    editPagamento.appendChild(o);
+  });
+
+  function openEdit(id){
+    var e = expenses.find(function(x){ return x.id===id; });
+    if(!e) return;
+    editingId = id;
+    editValor.value = e.valor.toFixed(2).replace('.',',');
+    editData.value = e.data;
+    editDesc.value = e.descricao || '';
+    editCategoria.value = e.categoria;
+    editPagamento.value = e.pagamento;
+    editTipo.value = e.isGain ? 'ganho' : 'gasto';
+    editOverlay.classList.add('open');
+  }
+  document.getElementById('editCancelBtn').addEventListener('click', function(){
+    editOverlay.classList.remove('open');
+  });
+  document.getElementById('editSaveBtn').addEventListener('click', function(){
+    var e = expenses.find(function(x){ return x.id===editingId; });
+    if(!e) return;
+    var v = parseFloat(editValor.value.replace(',','.'));
+    if(isNaN(v) || v<=0){ alert('Valor inválido'); return; }
+    e.valor = v;
+    e.data = editData.value || e.data;
+    e.descricao = editDesc.value.trim();
+    e.categoria = editCategoria.value;
+    e.pagamento = editPagamento.value;
+    e.isGain = editTipo.value === 'ganho';
     saveExpenses();
-    $('editOverlay').classList.remove('open'); editingId = null;
+    editOverlay.classList.remove('open');
     render();
   });
-  $('eDeleteBtn').addEventListener('click', () => {
-    expenses = expenses.filter(x => x.id !== editingId);
+  document.getElementById('editDeleteBtn').addEventListener('click', function(){
+    expenses = expenses.filter(function(x){ return x.id!==editingId; });
     saveExpenses();
-    $('editOverlay').classList.remove('open'); editingId = null;
+    editOverlay.classList.remove('open');
     render();
   });
 
-  $('clearAllBtn').addEventListener('click', () => $('clearOverlay').classList.add('open'));
-  $('cCancelBtn').addEventListener('click', () => $('clearOverlay').classList.remove('open'));
-  $('cConfirmBtn').addEventListener('click', () => {
+  // ---------- clear all ----------
+  var clearOverlay = document.getElementById('clearOverlay');
+  document.getElementById('clearAllBtn').addEventListener('click', function(){
+    clearOverlay.classList.add('open');
+  });
+  document.getElementById('clearCancelBtn').addEventListener('click', function(){
+    clearOverlay.classList.remove('open');
+  });
+  document.getElementById('clearConfirmBtn').addEventListener('click', function(){
     expenses = [];
     saveExpenses();
-    $('clearOverlay').classList.remove('open');
+    clearOverlay.classList.remove('open');
     render();
   });
 
-  function buildExtrato(monthEntries, monthLabel) {
-    const total = monthEntries.reduce((s, e) => s + e.amount, 0);
-    let lines = [];
-    lines.push('EXTRATO — ' + monthLabel.toUpperCase());
-    lines.push('Total do mês: ' + formatBRL(total));
-    lines.push('');
-    const byCat = {};
-    monthEntries.forEach(e => { (byCat[e.category] = byCat[e.category] || []).push(e); });
-    const catIds = Object.keys(byCat).sort((a, b) => {
-      const ta = byCat[a].reduce((s, e) => s + e.amount, 0);
-      const tb = byCat[b].reduce((s, e) => s + e.amount, 0);
-      return tb - ta;
+  // ---------- extrato ----------
+  var extratoOverlay = document.getElementById('extratoOverlay');
+  var extratoText = document.getElementById('extratoText');
+  var extratoTitle = document.getElementById('extratoTitle');
+
+  function buildExtrato(){
+    var list = monthExpenses();
+    var byCat = {};
+    CATEGORIES.forEach(function(c){ byCat[c.id] = { gasto:0, ganho:0, items:[] }; });
+    list.forEach(function(e){
+      if(!byCat[e.categoria]) byCat[e.categoria] = { gasto:0, ganho:0, items:[] };
+      if(e.isGain) byCat[e.categoria].ganho += e.valor;
+      else byCat[e.categoria].gasto += e.valor;
+      byCat[e.categoria].items.push(e);
     });
-    catIds.forEach(catId => {
-      const items = byCat[catId].slice().sort((a, b) => a.date.localeCompare(b.date));
-      const subtotal = items.reduce((s, e) => s + e.amount, 0);
-      lines.push(catLabel(catId) + ' — ' + formatBRL(subtotal));
-      items.forEach(e => {
-        const d = parseISODate(e.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        const desc = (e.description || '').padEnd(22, ' ').slice(0, 22);
-        const pay = ('[' + paymentLabel(e.paymentType) + ']').padEnd(10, ' ');
-        lines.push('  ' + d + '  ' + desc + '  ' + pay + '  ' + formatBRL(e.amount));
-      });
+
+    var byPay = {};
+    PAYMENT_TYPES.forEach(function(p){ byPay[p.id] = 0; });
+    var totalGasto = 0, totalGanho = 0;
+
+    var lines = [];
+    lines.push('EXTRATO — ' + MONTHS_PT[viewDate.getMonth()] + ' ' + viewDate.getFullYear());
+    lines.push('');
+
+    CATEGORIES.forEach(function(c){
+      var b = byCat[c.id];
+      if(!b || (b.gasto===0 && b.ganho===0)) return;
+      var net = b.gasto - b.ganho;
+      totalGasto += b.gasto;
+      totalGanho += b.ganho;
+      b.items.forEach(function(e){ byPay[e.pagamento] = (byPay[e.pagamento]||0) + (e.isGain?0:e.valor); });
+
+      lines.push(c.label.toUpperCase());
+      if(b.ganho > 0){
+        var tag = net < 0 ? 'LUCRO' : 'LÍQUIDO';
+        lines.push('  líquido: ' + formatBRL(net) + ' (' + tag + ')');
+        lines.push('  gasto: ' + formatBRL(b.gasto) + '  |  ganho: ' + formatBRL(b.ganho));
+      } else {
+        lines.push('  total: ' + formatBRL(b.gasto));
+      }
       lines.push('');
     });
-    lines.push('Por forma de pagamento:');
-    PAYMENT_TYPES.forEach(p => {
-      const subtotal = monthEntries.filter(e => (e.paymentType || 'pix') === p.id).reduce((s, e) => s + e.amount, 0);
-      lines.push('  ' + p.label.padEnd(10, ' ') + formatBRL(subtotal));
+
+    lines.push('----------------------------------------');
+    lines.push('Por forma de pagamento (gastos):');
+    PAYMENT_TYPES.forEach(function(p){
+      lines.push('  ' + p.label + ': ' + formatBRL(byPay[p.id]||0));
     });
-    return lines.join('\n').trim();
+    lines.push('----------------------------------------');
+    var netTotal = totalGasto - totalGanho;
+    if(netTotal >= 0){
+      lines.push('TOTAL GASTO NO MÊS: ' + formatBRL(netTotal));
+    } else {
+      lines.push('LUCRO LÍQUIDO NO MÊS: ' + formatBRL(Math.abs(netTotal)));
+    }
+    if(totalGanho > 0){
+      lines.push('(gasto bruto ' + formatBRL(totalGasto) + ' − recebido ' + formatBRL(totalGanho) + ')');
+    }
+
+    return lines.join('\n');
   }
 
-  $('extratoBtn').addEventListener('click', () => {
-    const monthEntries = entriesForViewMonth();
-    const monthLabel = viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    $('extratoTitle').textContent = 'Extrato de ' + monthLabel;
-    $('extratoText').value = monthEntries.length ? buildExtrato(monthEntries, monthLabel) : 'Nenhum gasto lançado neste mês ainda.';
-    $('extratoOverlay').classList.add('open');
+  document.getElementById('extratoBtn').addEventListener('click', function(){
+    extratoTitle.textContent = 'Extrato — ' + MONTHS_PT[viewDate.getMonth()] + ' ' + viewDate.getFullYear();
+    extratoText.value = buildExtrato();
+    extratoOverlay.classList.add('open');
   });
-  $('extratoCloseBtn').addEventListener('click', () => $('extratoOverlay').classList.remove('open'));
-  $('extratoCopyBtn').addEventListener('click', async () => {
-    const el = $('extratoText');
-    el.focus(); el.select();
-    const fb = $('extratoCopyFeedback');
-    try {
-      await navigator.clipboard.writeText(el.value);
-      fb.textContent = 'Copiado!';
-    } catch (e) {
-      fb.textContent = 'Selecionado — use Ctrl/Cmd+C.';
-    }
-    setTimeout(() => { fb.textContent = ''; }, 2500);
+  document.getElementById('extratoCloseBtn').addEventListener('click', function(){
+    extratoOverlay.classList.remove('open');
+  });
+  document.getElementById('extratoCopyBtn').addEventListener('click', function(){
+    extratoText.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    if(navigator.clipboard){ navigator.clipboard.writeText(extratoText.value).catch(function(){}); }
   });
 
-  $('toggleBackup').addEventListener('click', () => {
-    const panel = $('backupPanel');
-    const open = panel.style.display !== 'none';
-    panel.style.display = open ? 'none' : 'block';
-    $('toggleBackup').textContent = open ? '+ exportar / importar backup' : '- ocultar backup';
-    if (!open) updateBackupText();
+  // ---------- backup panel ----------
+  var panelToggle = document.getElementById('panelToggle');
+  var backupPanel = document.getElementById('backupPanel');
+  panelToggle.addEventListener('click', function(){
+    backupPanel.classList.toggle('open');
   });
-
-  $('copyBackupBtn').addEventListener('click', async () => {
-    const el = $('backupText');
-    updateBackupText();
-    el.focus(); el.select();
-    const fb = $('copyFeedback');
-    try {
-      await navigator.clipboard.writeText(el.value);
-      fb.textContent = 'Copiado!';
-    } catch (e) {
-      fb.textContent = 'Selecionado — use Ctrl/Cmd+C pra copiar.';
-    }
-    setTimeout(() => { fb.textContent = ''; }, 2500);
+  document.getElementById('genBackupBtn').addEventListener('click', function(){
+    document.getElementById('backupOut').value = JSON.stringify(expenses, null, 2);
   });
-
-  $('restoreBtn').addEventListener('click', () => {
-    const fb = $('restoreFeedback');
-    const raw = $('restoreText').value.trim();
-    if (!raw) return;
-    try {
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) throw new Error('formato invalido');
-      expenses = parsed;
+  document.getElementById('copyBackupBtn').addEventListener('click', function(){
+    var ta = document.getElementById('backupOut');
+    ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    if(navigator.clipboard){ navigator.clipboard.writeText(ta.value).catch(function(){}); }
+  });
+  document.getElementById('restoreBtn').addEventListener('click', function(){
+    var raw = document.getElementById('restoreIn').value.trim();
+    if(!raw) return;
+    try{
+      var parsed = JSON.parse(raw);
+      if(!Array.isArray(parsed)) throw new Error('formato inválido');
+      parsed.forEach(function(e){
+        if(!e.id) e.id = uid();
+        if(typeof e.isGain !== 'boolean') e.isGain = false;
+      });
+      // merge, avoiding duplicate ids
+      var existingIds = {};
+      expenses.forEach(function(e){ existingIds[e.id] = true; });
+      parsed.forEach(function(e){
+        if(!existingIds[e.id]){
+          expenses.push(e);
+        }
+      });
       saveExpenses();
+      document.getElementById('restoreIn').value = '';
       render();
-      fb.textContent = 'Restaurado!';
-      $('restoreText').value = '';
-    } catch (e) {
-      fb.textContent = 'Não consegui ler esse texto. Confira se colou certinho.';
+      alert('Restaurado com sucesso!');
+    }catch(err){
+      alert('Backup inválido: ' + err.message);
     }
-    setTimeout(() => { fb.textContent = ''; }, 3000);
   });
 
+  // ---------- init ----------
+  renderChips();
+  renderPayToggle();
+  renderKeypad();
   loadExpenses();
-})();
+  render();
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').catch(function (e) {
-      console.error('Falha ao registrar service worker:', e);
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./service-worker.js').catch(function(){});
     });
-  });
-}
+  }
+})();
 </script>
 </body>
 </html>
