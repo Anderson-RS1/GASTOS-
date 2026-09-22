@@ -369,20 +369,30 @@
   var CATEGORIES = [
     { id:'cachaca',    label:'Cachaça & Cia', keywords:['cachaca','cerveja','bebida','bar ','churrasquinho','tira gosto','petisco'] },
     { id:'mercado',    label:'Mercado',       keywords:['mercado','supermercado','padaria','acougue','hortifruti'] },
-    { id:'comidafora', label:'Comida Fora',   keywords:['ifood','restaurante','lanchonete','delivery','quintalcorten','lanche','pizza'] },
-    { id:'bets',       label:'Bets',          keywords:['bet','aposta','hs do brasil'] },
+    { id:'delivery',   label:'Comida Fora',   keywords:['ifood','restaurante','lanchonete','delivery','quintalcorten','lanche','pizza'] },
+    { id:'apostas',    label:'Bets',          keywords:['bet','aposta','hs do brasil'] },
     { id:'lavanderia', label:'Lavanderia',    keywords:['lavanderia','lavagem','lava jato'] },
     { id:'gata',       label:'Gata Vaidosa',  keywords:['salao','unha','cabelo','depila','manicure','estetica'] },
-    { id:'coletas',    label:'Coletas',       keywords:['coleta'] },
+    { id:'coleta',     label:'Coletas',       keywords:['coleta'] },
     { id:'saude',      label:'Saúde',         keywords:['farmacia','remedio','medico','saude','drogaria'] },
     { id:'hydro',      label:'Café Hydro',    keywords:['hydro','elasa','cafe hydro'] },
     { id:'outros',     label:'Outros',        keywords:[] }
   ];
 
+  // ids antigos que já existiram em versões anteriores do app / backups,
+  // mapeados para os ids atuais (canônicos) — assim nenhum dado se perde.
+  var LEGACY_CATEGORY_MAP = { bets:'apostas', comidafora:'delivery', coletas:'coleta' };
+  function mapLegacyCategory(id){
+    if(!id) return 'outros';
+    if(LEGACY_CATEGORY_MAP[id]) return LEGACY_CATEGORY_MAP[id];
+    for(var i=0;i<CATEGORIES.length;i++) if(CATEGORIES[i].id===id) return id;
+    return 'outros';
+  }
+
   var CAT_COLOR = {
-    cachaca:'var(--cat-cachaca)', mercado:'var(--cat-mercado)', comidafora:'var(--cat-comidafora)',
-    bets:'var(--cat-bets)', lavanderia:'var(--cat-lavanderia)', gata:'var(--cat-gata)',
-    coletas:'var(--cat-coletas)', saude:'var(--cat-saude)', hydro:'var(--cat-hydro)', outros:'var(--cat-outros)'
+    cachaca:'var(--cat-cachaca)', mercado:'var(--cat-mercado)', delivery:'var(--cat-comidafora)',
+    apostas:'var(--cat-bets)', lavanderia:'var(--cat-lavanderia)', gata:'var(--cat-gata)',
+    coleta:'var(--cat-coletas)', saude:'var(--cat-saude)', hydro:'var(--cat-hydro)', outros:'var(--cat-outros)'
   };
 
   var PAYMENT_TYPES = [
@@ -454,13 +464,46 @@
     var d = parseISODate(iso);
     return d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0');
   }
+  function tsToISO(ms){
+    var d = new Date(ms);
+    var m = (d.getMonth()+1).toString().padStart(2,'0');
+    var day = d.getDate().toString().padStart(2,'0');
+    return d.getFullYear()+'-'+m+'-'+day;
+  }
+
+  // Normaliza um lançamento vindo de qualquer versão anterior do app /
+  // backup colado, pro formato atual: {id,date,amount,description,category,paymentType,createdAt,isGain}
+  function normalizeEntry(raw){
+    raw = raw || {};
+    var amount = raw.amount;
+    if(typeof amount !== 'number') amount = raw.valor;
+    if(typeof amount !== 'number') amount = parseFloat(amount) || 0;
+
+    var createdAt = raw.createdAt;
+    if(typeof createdAt !== 'number') createdAt = Date.now();
+
+    var date = raw.date || raw.data || null;
+    if(!date) date = tsToISO(createdAt);
+
+    return {
+      id: raw.id || uid(),
+      date: date,
+      amount: amount,
+      description: raw.description != null ? raw.description : (raw.descricao || ''),
+      category: mapLegacyCategory(raw.category || raw.categoria),
+      paymentType: raw.paymentType || raw.pagamento || 'pix',
+      createdAt: createdAt,
+      isGain: !!raw.isGain
+    };
+  }
 
   // ---------- storage ----------
   function loadExpenses(){
     try{
       var raw = window.localStorage.getItem(STORAGE_KEY);
-      expenses = raw ? JSON.parse(raw) : [];
-      if(!Array.isArray(expenses)) expenses = [];
+      var parsed = raw ? JSON.parse(raw) : [];
+      if(!Array.isArray(parsed)) parsed = [];
+      expenses = parsed.map(normalizeEntry);
     }catch(e){
       expenses = [];
     }
@@ -488,7 +531,7 @@
   }
 
   function updateTypeToggleVisibility(){
-    if(selectedCategory === 'bets'){
+    if(selectedCategory === 'apostas'){
       typeToggleWrap.style.display = 'flex';
     } else {
       typeToggleWrap.style.display = 'none';
@@ -744,11 +787,12 @@
     var cat = selectedCategory || classify(descInput.value) || 'outros';
     var entry = {
       id: uid(),
-      data: todayISO(),
-      valor: amount,
-      descricao: descInput.value.trim(),
-      categoria: cat,
-      pagamento: currentPayment,
+      date: todayISO(),
+      amount: amount,
+      description: descInput.value.trim(),
+      category: cat,
+      paymentType: currentPayment,
+      createdAt: Date.now(),
       isGain: currentType === 'ganho'
     };
     expenses.push(entry);
@@ -783,7 +827,7 @@
   function monthExpenses(){
     var key = monthKey(viewDate);
     return expenses.filter(function(e){
-      return monthKey(parseISODate(e.data)) === key;
+      return monthKey(parseISODate(e.date)) === key;
     });
   }
 
@@ -797,7 +841,7 @@
     var list = monthExpenses();
 
     var net = 0;
-    list.forEach(function(e){ net += e.isGain ? -e.valor : e.valor; });
+    list.forEach(function(e){ net += e.isGain ? -e.amount : e.amount; });
 
     if(net >= 0){
       totalAmount.textContent = formatBRL(net);
@@ -822,8 +866,8 @@
       return;
     }
     var sorted = list.slice().sort(function(a,b){
-      if(a.data !== b.data) return a.data < b.data ? 1 : -1;
-      return 0;
+      if(a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return (b.createdAt||0) - (a.createdAt||0);
     });
     sorted.forEach(function(e){
       var row = document.createElement('div');
@@ -831,12 +875,12 @@
       var sign = e.isGain ? '+ ' : '';
       row.innerHTML =
         '<div class="left">' +
-          '<div class="top-line"><span class="date">'+fmtDateShort(e.data)+'</span>' +
-          '<span class="val'+(e.isGain?' ganho':'')+'">'+sign+formatBRL(e.valor)+'</span></div>' +
-          (e.descricao ? '<div class="desc">'+escapeHtml(e.descricao)+'</div>' : '') +
+          '<div class="top-line"><span class="date">'+fmtDateShort(e.date)+'</span>' +
+          '<span class="val'+(e.isGain?' ganho':'')+'">'+sign+formatBRL(e.amount)+'</span></div>' +
+          (e.description ? '<div class="desc">'+escapeHtml(e.description)+'</div>' : '') +
           '<div class="tags">' +
-            '<span class="tag" style="background:'+CAT_COLOR[e.categoria]+'">'+catLabel(e.categoria)+'</span>' +
-            '<span class="tag pay">'+paymentLabel(e.pagamento)+'</span>' +
+            '<span class="tag" style="background:'+CAT_COLOR[e.category]+'">'+catLabel(e.category)+'</span>' +
+            '<span class="tag pay">'+paymentLabel(e.paymentType)+'</span>' +
             (e.isGain ? '<span class="tag ganho-tag">Ganho</span>' : '') +
           '</div>' +
         '</div>';
@@ -876,11 +920,11 @@
     var e = expenses.find(function(x){ return x.id===id; });
     if(!e) return;
     editingId = id;
-    editValor.value = e.valor.toFixed(2).replace('.',',');
-    editData.value = e.data;
-    editDesc.value = e.descricao || '';
-    editCategoria.value = e.categoria;
-    editPagamento.value = e.pagamento;
+    editValor.value = e.amount.toFixed(2).replace('.',',');
+    editData.value = e.date;
+    editDesc.value = e.description || '';
+    editCategoria.value = e.category;
+    editPagamento.value = e.paymentType;
     editTipo.value = e.isGain ? 'ganho' : 'gasto';
     editOverlay.classList.add('open');
   }
@@ -892,11 +936,11 @@
     if(!e) return;
     var v = parseFloat(editValor.value.replace(',','.'));
     if(isNaN(v) || v<=0){ alert('Valor inválido'); return; }
-    e.valor = v;
-    e.data = editData.value || e.data;
-    e.descricao = editDesc.value.trim();
-    e.categoria = editCategoria.value;
-    e.pagamento = editPagamento.value;
+    e.amount = v;
+    e.date = editData.value || e.date;
+    e.description = editDesc.value.trim();
+    e.category = editCategoria.value;
+    e.paymentType = editPagamento.value;
     e.isGain = editTipo.value === 'ganho';
     saveExpenses();
     editOverlay.classList.remove('open');
@@ -934,10 +978,10 @@
     var byCat = {};
     CATEGORIES.forEach(function(c){ byCat[c.id] = { gasto:0, ganho:0, items:[] }; });
     list.forEach(function(e){
-      if(!byCat[e.categoria]) byCat[e.categoria] = { gasto:0, ganho:0, items:[] };
-      if(e.isGain) byCat[e.categoria].ganho += e.valor;
-      else byCat[e.categoria].gasto += e.valor;
-      byCat[e.categoria].items.push(e);
+      if(!byCat[e.category]) byCat[e.category] = { gasto:0, ganho:0, items:[] };
+      if(e.isGain) byCat[e.category].ganho += e.amount;
+      else byCat[e.category].gasto += e.amount;
+      byCat[e.category].items.push(e);
     });
 
     var byPay = {};
@@ -954,7 +998,7 @@
       var net = b.gasto - b.ganho;
       totalGasto += b.gasto;
       totalGanho += b.ganho;
-      b.items.forEach(function(e){ byPay[e.pagamento] = (byPay[e.pagamento]||0) + (e.isGain?0:e.valor); });
+      b.items.forEach(function(e){ byPay[e.paymentType] = (byPay[e.paymentType]||0) + (e.isGain?0:e.amount); });
 
       lines.push(c.label.toUpperCase());
       if(b.ganho > 0){
@@ -1019,12 +1063,9 @@
     var raw = document.getElementById('restoreIn').value.trim();
     if(!raw) return;
     try{
-      var parsed = JSON.parse(raw);
-      if(!Array.isArray(parsed)) throw new Error('formato inválido');
-      parsed.forEach(function(e){
-        if(!e.id) e.id = uid();
-        if(typeof e.isGain !== 'boolean') e.isGain = false;
-      });
+      var parsedRaw = JSON.parse(raw);
+      if(!Array.isArray(parsedRaw)) throw new Error('formato inválido');
+      var parsed = parsedRaw.map(normalizeEntry);
       // merge, avoiding duplicate ids
       var existingIds = {};
       expenses.forEach(function(e){ existingIds[e.id] = true; });
