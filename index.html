@@ -865,23 +865,32 @@
       }
     });
 
-    totalAmount.textContent = formatBRL(gasto);
-    totalAmount.classList.remove('lucro');
-    totalSub.textContent = 'gasto do mês';
-
+    // Categoria "net" (Bets) só entra no total do topo no mês em que deu
+    // prejuízo (líquido positivo = saiu mais do que voltou). Em mês de lucro
+    // ela fica de fora do total, só aparece na nota informativa.
     var noteParts = [];
     NET_CATEGORIES.forEach(function(id){
       var b = netCat[id];
       if(b.gasto===0 && b.ganho===0) return;
       var net = b.gasto - b.ganho;
       var label = catLabel(id);
-      if(net > 0) noteParts.push(label + ': gasto líquido de ' + formatBRL(net));
-      else if(net < 0) noteParts.push(label + ': lucro de ' + formatBRL(Math.abs(net)));
-      else noteParts.push(label + ': saldo zerado');
+      if(net > 0){
+        gasto += net;
+        noteParts.push(label + ': gasto líquido de ' + formatBRL(net) + ' (incluso no total acima)');
+      } else if(net < 0){
+        noteParts.push(label + ': lucro de ' + formatBRL(Math.abs(net)) + ' (fora do total acima)');
+      } else {
+        noteParts.push(label + ': saldo zerado (fora do total acima)');
+      }
     });
+
+    totalAmount.textContent = formatBRL(gasto);
+    totalAmount.classList.remove('lucro');
+    totalSub.textContent = 'gasto do mês';
+
     if(noteParts.length){
       totalGainNote.style.display = 'block';
-      totalGainNote.textContent = noteParts.join(' · ') + ' (fora do total acima)';
+      totalGainNote.textContent = noteParts.join(' · ');
     } else {
       totalGainNote.style.display = 'none';
     }
