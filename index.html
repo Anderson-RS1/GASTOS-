@@ -186,15 +186,6 @@
     padding:8px 6px; font-family:'IBM Plex Sans', sans-serif; font-size:12.5px;
     background:var(--white); color:var(--ink);
   }
-  .filter-dates{
-    display:flex; align-items:center; gap:4px; flex:1 1 190px;
-  }
-  .filter-dates input{
-    flex:1; min-width:0; border:1.5px solid var(--rule-strong); border-radius:8px;
-    padding:8px 4px; font-family:'IBM Plex Sans', sans-serif; font-size:11.5px;
-    background:var(--white); color:var(--ink);
-  }
-  .filter-sep{ color:var(--ink-faint); font-size:12px; }
   .filter-clear{
     flex:0 0 auto; width:34px; height:34px; border-radius:8px; border:1.5px solid var(--rule-strong);
     background:var(--white); color:var(--ink-soft); font-size:14px; cursor:pointer;
@@ -327,12 +318,7 @@
 
   <div class="filter-bar" id="filterBar">
     <select id="filterCategoria"><option value="">Todas categorias</option></select>
-    <div class="filter-dates">
-      <input type="date" id="filterDe" aria-label="De">
-      <span class="filter-sep">–</span>
-      <input type="date" id="filterAte" aria-label="Até">
-    </div>
-    <button class="filter-clear" id="filterClearBtn" title="Limpar filtros">✕</button>
+    <button class="filter-clear" id="filterClearBtn" title="Limpar filtro">✕</button>
   </div>
   <div class="filter-count" id="filterCount"></div>
 
@@ -881,8 +867,6 @@
 
   // ---------- filtros da lista (categoria / período) ----------
   var filterCategoria = document.getElementById('filterCategoria');
-  var filterDe = document.getElementById('filterDe');
-  var filterAte = document.getElementById('filterAte');
   var filterClearBtn = document.getElementById('filterClearBtn');
   var filterCount = document.getElementById('filterCount');
 
@@ -894,28 +878,17 @@
 
   function applyFilters(list){
     var cat = filterCategoria.value;
-    var de = filterDe.value;
-    var ate = filterAte.value;
-    if(!cat && !de && !ate) return list;
-    return list.filter(function(e){
-      if(cat && e.category !== cat) return false;
-      if(de && e.date < de) return false;
-      if(ate && e.date > ate) return false;
-      return true;
-    });
+    if(!cat) return list;
+    return list.filter(function(e){ return e.category === cat; });
   }
 
   function hasActiveFilters(){
-    return !!(filterCategoria.value || filterDe.value || filterAte.value);
+    return !!filterCategoria.value;
   }
 
-  [filterCategoria, filterDe, filterAte].forEach(function(el){
-    el.addEventListener('change', render);
-  });
+  filterCategoria.addEventListener('change', render);
   filterClearBtn.addEventListener('click', function(){
     filterCategoria.value = '';
-    filterDe.value = '';
-    filterAte.value = '';
     render();
   });
 
@@ -974,8 +947,20 @@
 
     var filtered = applyFilters(list);
     if(hasActiveFilters()){
+      var subGasto = 0, subGanho = 0;
+      filtered.forEach(function(e){
+        if(e.isGain) subGanho += e.amount;
+        else subGasto += e.amount;
+      });
+      var label = catLabel(filterCategoria.value);
+      var subText;
+      if(subGanho > 0){
+        subText = label + ': líquido ' + formatBRL(subGasto - subGanho) + ' (' + filtered.length + ' lançamentos)';
+      } else {
+        subText = label + ': ' + formatBRL(subGasto) + ' (' + filtered.length + ' lançamentos)';
+      }
       filterCount.style.display = 'block';
-      filterCount.textContent = filtered.length + ' de ' + list.length + ' lançamentos';
+      filterCount.textContent = subText;
     } else {
       filterCount.style.display = 'none';
     }
