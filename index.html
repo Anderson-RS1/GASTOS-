@@ -178,6 +178,32 @@
     letter-spacing:0.5px; cursor:pointer; touch-action:manipulation;
   }
 
+  .filter-bar{
+    display:flex; align-items:center; gap:6px; margin:14px 14px 0; flex-wrap:wrap;
+  }
+  .filter-bar select{
+    flex:1 1 140px; min-width:0; border:1.5px solid var(--rule-strong); border-radius:8px;
+    padding:8px 6px; font-family:'IBM Plex Sans', sans-serif; font-size:12.5px;
+    background:var(--white); color:var(--ink);
+  }
+  .filter-dates{
+    display:flex; align-items:center; gap:4px; flex:1 1 190px;
+  }
+  .filter-dates input{
+    flex:1; min-width:0; border:1.5px solid var(--rule-strong); border-radius:8px;
+    padding:8px 4px; font-family:'IBM Plex Sans', sans-serif; font-size:11.5px;
+    background:var(--white); color:var(--ink);
+  }
+  .filter-sep{ color:var(--ink-faint); font-size:12px; }
+  .filter-clear{
+    flex:0 0 auto; width:34px; height:34px; border-radius:8px; border:1.5px solid var(--rule-strong);
+    background:var(--white); color:var(--ink-soft); font-size:14px; cursor:pointer;
+    touch-action:manipulation;
+  }
+  .filter-count{
+    margin:6px 14px 0; font-size:11px; color:var(--ink-faint); text-align:right;
+    display:none;
+  }
   .ledger{ margin-top:16px; padding:0 14px; }
   .ledger-row{
     display:flex; justify-content:space-between; align-items:flex-start;
@@ -298,6 +324,17 @@
   <div class="extrato-btn-wrap">
     <button class="extrato-btn" id="extratoBtn">Ver extrato do mês</button>
   </div>
+
+  <div class="filter-bar" id="filterBar">
+    <select id="filterCategoria"><option value="">Todas categorias</option></select>
+    <div class="filter-dates">
+      <input type="date" id="filterDe" aria-label="De">
+      <span class="filter-sep">–</span>
+      <input type="date" id="filterAte" aria-label="Até">
+    </div>
+    <button class="filter-clear" id="filterClearBtn" title="Limpar filtros">✕</button>
+  </div>
+  <div class="filter-count" id="filterCount"></div>
 
   <div class="ledger" id="ledger"></div>
 
@@ -842,6 +879,46 @@
   var totalGainNote = document.getElementById('totalGainNote');
   var ledger = document.getElementById('ledger');
 
+  // ---------- filtros da lista (categoria / período) ----------
+  var filterCategoria = document.getElementById('filterCategoria');
+  var filterDe = document.getElementById('filterDe');
+  var filterAte = document.getElementById('filterAte');
+  var filterClearBtn = document.getElementById('filterClearBtn');
+  var filterCount = document.getElementById('filterCount');
+
+  CATEGORIES.forEach(function(c){
+    var o = document.createElement('option');
+    o.value = c.id; o.textContent = c.label;
+    filterCategoria.appendChild(o);
+  });
+
+  function applyFilters(list){
+    var cat = filterCategoria.value;
+    var de = filterDe.value;
+    var ate = filterAte.value;
+    if(!cat && !de && !ate) return list;
+    return list.filter(function(e){
+      if(cat && e.category !== cat) return false;
+      if(de && e.date < de) return false;
+      if(ate && e.date > ate) return false;
+      return true;
+    });
+  }
+
+  function hasActiveFilters(){
+    return !!(filterCategoria.value || filterDe.value || filterAte.value);
+  }
+
+  [filterCategoria, filterDe, filterAte].forEach(function(el){
+    el.addEventListener('change', render);
+  });
+  filterClearBtn.addEventListener('click', function(){
+    filterCategoria.value = '';
+    filterDe.value = '';
+    filterAte.value = '';
+    render();
+  });
+
   // Categorias com um resultado próprio de "ganho x gasto" (por enquanto só Bets)
   // ficam de fora do número principal do topo — esse número é só o gasto do
   // dia a dia que passa despercebido, que é o objetivo do app. O resultado
@@ -895,7 +972,15 @@
       totalGainNote.style.display = 'none';
     }
 
-    renderLedger(list);
+    var filtered = applyFilters(list);
+    if(hasActiveFilters()){
+      filterCount.style.display = 'block';
+      filterCount.textContent = filtered.length + ' de ' + list.length + ' lançamentos';
+    } else {
+      filterCount.style.display = 'none';
+    }
+
+    renderLedger(filtered);
   }
 
   function renderLedger(list){
