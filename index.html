@@ -284,7 +284,7 @@
 
   <div class="total-hero">
     <div class="amount" id="totalAmount">R$ 0,00</div>
-    <div class="sub" id="totalSub">gasto do mês</div>
+    <div class="sub" id="totalSub">gasto do período</div>
     <div class="sub-gain" id="totalGainNote"></div>
   </div>
 
@@ -487,8 +487,31 @@
   function uid(){
     return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
   }
+  // período financeiro: do dia 16 de um mês ao dia 15 do mês seguinte
+  // (Anderson recebe pagamento no dia 16)
+  function periodStart(d){
+    var y = d.getFullYear();
+    var m = d.getMonth();
+    if(d.getDate() < 16){
+      m -= 1;
+      if(m < 0){ m = 11; y -= 1; }
+    }
+    return { y: y, m: m };
+  }
   function monthKey(d){
-    return d.getFullYear() + '-' + (d.getMonth()+1);
+    var p = periodStart(d);
+    return p.y + '-' + p.m;
+  }
+  function periodLabel(d){
+    var p = periodStart(d);
+    var endM = p.m + 1, endY = p.y;
+    if(endM > 11){ endM = 0; endY += 1; }
+    var startAbbr = MONTHS_PT[p.m].substring(0,3);
+    var endAbbr = MONTHS_PT[endM].substring(0,3);
+    if(p.y === endY){
+      return '16 ' + startAbbr + ' – 15 ' + endAbbr + ' ' + endY;
+    }
+    return '16 ' + startAbbr + ' ' + p.y + ' – 15 ' + endAbbr + ' ' + endY;
   }
   function fmtDateShort(iso){
     var d = parseISODate(iso);
@@ -901,7 +924,7 @@
   var NET_CATEGORIES = ['apostas'];
 
   function render(){
-    monthLabel.textContent = MONTHS_PT[viewDate.getMonth()] + ' ' + viewDate.getFullYear();
+    monthLabel.textContent = periodLabel(viewDate);
     var list = monthExpenses();
 
     var gasto = 0;
@@ -938,7 +961,7 @@
 
     totalAmount.textContent = formatBRL(gasto);
     totalAmount.classList.remove('lucro');
-    totalSub.textContent = 'gasto do mês';
+    totalSub.textContent = 'gasto do período';
 
     if(noteParts.length){
       totalGainNote.style.display = 'block';
@@ -1103,7 +1126,7 @@
     var totalGasto = 0, totalGanho = 0;
 
     var lines = [];
-    lines.push('EXTRATO — ' + MONTHS_PT[viewDate.getMonth()] + ' ' + viewDate.getFullYear());
+    lines.push('EXTRATO — ' + periodLabel(viewDate));
     lines.push('');
 
     CATEGORIES.forEach(function(c){
@@ -1146,7 +1169,7 @@
   }
 
   document.getElementById('extratoBtn').addEventListener('click', function(){
-    extratoTitle.textContent = 'Extrato — ' + MONTHS_PT[viewDate.getMonth()] + ' ' + viewDate.getFullYear();
+    extratoTitle.textContent = 'Extrato — ' + periodLabel(viewDate);
     extratoText.value = buildExtrato();
     extratoOverlay.classList.add('open');
   });
@@ -1181,18 +1204,26 @@
       var parsedRaw = JSON.parse(raw);
       if(!Array.isArray(parsedRaw)) throw new Error('formato inválido');
       var parsed = parsedRaw.map(normalizeEntry);
-      // merge, avoiding duplicate ids
-      var existingIds = {};
-      expenses.forEach(function(e){ existingIds[e.id] = true; });
+      // merge: ids que já existem são ATUALIZADOS (sobrescritos) com os dados novos;
+      // ids novos são adicionados. Isso permite mandar um "patch" de correção
+      // (ex: só mudando paymentType) sem duplicar nada.
+      var indexById = {};
+      expenses.forEach(function(e, idx){ indexById[e.id] = idx; });
+      var added = 0, updated = 0;
       parsed.forEach(function(e){
-        if(!existingIds[e.id]){
+        if(Object.prototype.hasOwnProperty.call(indexById, e.id)){
+          expenses[indexById[e.id]] = e;
+          updated++;
+        } else {
           expenses.push(e);
+          indexById[e.id] = expenses.length - 1;
+          added++;
         }
       });
       saveExpenses();
       document.getElementById('restoreIn').value = '';
       render();
-      alert('Restaurado com sucesso!');
+      alert('Restaurado com sucesso! ' + added + ' novo(s), ' + updated + ' atualizado(s).');
     }catch(err){
       alert('Backup inválido: ' + err.message);
     }
